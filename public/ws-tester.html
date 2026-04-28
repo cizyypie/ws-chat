@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Chat Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .container {
+            display: grid;
+            gap: 20px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        #messageLog {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background: white;
+            margin: 10px 0;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .system { color: #666; font-style: italic; }
+        input, button {
+            padding: 8px;
+            margin: 5px 0;
+        }
+        input {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 10px 20px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h2>Connection</h2>
+            <input type="text" id="wsUrl" value="ws://localhost:3000/ws" placeholder="WebSocket URL">
+            <input type="text" id="username" placeholder="Enter your username">
+            <button onclick="connect()">Connect</button>
+            <button onclick="disconnect()">Disconnect</button>
+        </div>
+
+        <div class="card">
+            <h2>Send Message</h2>
+            <input type="text" id="messageInput" placeholder="Type your message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+
+        <div class="card">
+            <h2>Message Log</h2>
+            <div id="messageLog"></div>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        let username;
+
+        function connect() {
+            username = document.getElementById('username').value.trim();
+            const url = document.getElementById('wsUrl').value;
+
+            if (!username) {
+                alert('Please enter a username');
+                return;
+            }
+
+            ws = new WebSocket(url);
+
+            ws.onopen = () => {
+                addToLog('System', 'Connected to server');
+                // Send join message
+                ws.send(JSON.stringify({
+                    type: 'join',
+                    username: username
+                }));
+            };
+
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                addToLog(message.username || 'System', message.content);
+            };
+
+            ws.onclose = () => {
+                addToLog('System', 'Disconnected from server');
+            };
+
+            ws.onerror = (error) => {
+                addToLog('System', 'Error: ' + error.message);
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.send(JSON.stringify({
+                    type: 'leave',
+                    username: username
+                }));
+                ws.close();
+            }
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const content = messageInput.value.trim();
+
+            if (!content || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+            ws.send(JSON.stringify({
+                type: 'message',
+                username: username,
+                content: content
+            }));
+
+            messageInput.value = '';
+        }
+
+        function addToLog(sender, content) {
+            const log = document.getElementById('messageLog');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender === 'System' ? 'system' : ''}`;
+            messageDiv.textContent = `${sender}: ${content}`;
+            log.appendChild(messageDiv);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Allow sending message with Enter key
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
