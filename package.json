@@ -7,10 +7,13 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@elysiajs/cookie": "^0.8.0",
     "@elysiajs/cors": "^1.4.1",
     "@elysiajs/static": "^1.4.1",
     "@neondatabase/serverless": "^1.1.0",
+    "bun": "^1.3.13",
     "drizzle-orm": "^0.45.2",
+    "ejs": "^5.0.2",
     "elysia": "^1.4.28"
   },
   "devDependencies": {
