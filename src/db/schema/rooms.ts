@@ -4,7 +4,7 @@ import { users } from './users';
 
 export const rooms = pgTable('rooms', {
     id: serial('id').primaryKey(),
-    name: text('room_name').notNull() ,
-    userId: integer('owner_id').references(() => users.id),
+    name: text('name').notNull() ,
+    ownerId: integer('owner_id').references(() => users.id).notNull(),
     createdAt: timestamp('created_at').defaultNow()
 });
