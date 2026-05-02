@@ -5,24 +5,21 @@ import { RoomMembersService } from '../services/room-members.service';
 const roomService = new RoomService();
 const roomMembersService = new RoomMembersService();
 
-// Middleware: Check if user is logged in
-const requireAuth = (userId?: string) => {
-    if (!userId) {
+const requireAuth = (cookieValue: string | undefined): number => {
+    if (!cookieValue) {
         throw new Error('Not authenticated');
     }
-    return parseInt(userId);
+    return parseInt(cookieValue);
 };
 
 export function setupRoomRoutes(app: Elysia) {
     
+    // GET /rooms - List all rooms
     app.get('/rooms',
-        async ({ cookie }) => {
-            const userId = requireAuth(cookie.userId?.value);
+        async ({ cookie }: any) => {
+            const userId = requireAuth(cookie.userId?.value as string | undefined);
             
-            // Get all rooms with owner info
             const allRooms = await roomService.getAllRooms();
-            
-            // Get rooms user is in
             const userRooms = await roomService.getRoomsByUser(userId);
             
             return {
@@ -33,21 +30,21 @@ export function setupRoomRoutes(app: Elysia) {
         }
     );
     
-    // Route 2: Create new room
-    // POST /rooms → create room
+    // POST /rooms - Create new room
+   // POST /rooms - Create new room
     app.post('/rooms',
-        async ({ body, cookie }) => {
-            const userId = requireAuth(cookie.userId?.value);
+        async ({ body, cookie, set }: any) => { // <-- ADD 'set' to the destructured parameters
+            const userId = requireAuth(cookie.userId?.value as string | undefined);
             
-            const room = await roomService.createRoom(userId, body.name);
+            const room = await roomService.createRoom(userId, body.name as string);
             
             // Auto join the creator
-            await roomMembersService.joinRoom(userId, room.id);
+            await roomMembersService.joinRoom(userId, room!.id);
             
-            return {
-                success: true,
-                room
-            };
+            // Tell the browser to immediately redirect back to the rooms list
+            set.status = 303;
+            set.headers['Location'] = '/rooms';
+            return null; 
         },
         {
             body: t.Object({
@@ -56,12 +53,11 @@ export function setupRoomRoutes(app: Elysia) {
         }
     );
     
-    // Route 3: Delete room (only owner)
     // DELETE /rooms/:roomId
     app.delete('/rooms/:roomId',
-        async ({ params, cookie }) => {
-            const userId = requireAuth(cookie.userId?.value);
-            const roomId = parseInt(params.roomId);
+        async ({ params, cookie }: any) => {
+            const userId = requireAuth(cookie.userId?.value as string | undefined);
+            const roomId = parseInt(params.roomId as string);
             
             const success = await roomService.deleteRoom(roomId, userId);
             
@@ -76,12 +72,11 @@ export function setupRoomRoutes(app: Elysia) {
         }
     );
     
-    // Route 4: Join room
     // POST /rooms/:roomId/join
     app.post('/rooms/:roomId/join',
-        async ({ params, cookie }) => {
-            const userId = requireAuth(cookie.userId?.value);
-            const roomId = parseInt(params.roomId);
+        async ({ params, cookie }: any) => {
+            const userId = requireAuth(cookie.userId?.value as string | undefined);
+            const roomId = parseInt(params.roomId as string);
             
             const result = await roomMembersService.joinRoom(userId, roomId);
             
@@ -89,12 +84,11 @@ export function setupRoomRoutes(app: Elysia) {
         }
     );
     
-    // Route 5: Leave room
     // POST /rooms/:roomId/leave
     app.post('/rooms/:roomId/leave',
-        async ({ params, cookie }) => {
-            const userId = requireAuth(cookie.userId?.value);
-            const roomId = parseInt(params.roomId);
+        async ({ params, cookie }: any) => {
+            const userId = requireAuth(cookie.userId?.value as string | undefined);
+            const roomId = parseInt(params.roomId as string);
             
             const success = await roomMembersService.leaveRoom(userId, roomId);
             
@@ -102,11 +96,10 @@ export function setupRoomRoutes(app: Elysia) {
         }
     );
     
-    // Route 6: Get room members
     // GET /rooms/:roomId/members
     app.get('/rooms/:roomId/members',
-        async ({ params }) => {
-            const roomId = parseInt(params.roomId);
+        async ({ params }: any) => {
+            const roomId = parseInt(params.roomId as string);
             
             return await roomMembersService.getRoomMembers(roomId);
         }
