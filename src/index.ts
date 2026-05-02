@@ -2,12 +2,20 @@ import { Elysia, t } from 'elysia';
 import { swagger } from '@elysiajs/swagger';
 import { cors } from '@elysiajs/cors';
 import { staticPlugin } from '@elysiajs/static';
-
+import { html } from '@elysiajs/html';
+import ejs from 'ejs';            
 import { apiRoutes } from './routes/index';
+
+const renderView = async (view: string, data: object = {}) => {
+  const filePath = `${import.meta.dir}/views/${view}.ejs`;
+  const template = await Bun.file(filePath).text();
+  return ejs.render(template, data);
+};
 
 const app = new Elysia()
     .use(cors())
     .use(staticPlugin())
+    .use(html())                     
     .use(swagger({
         documentation: {
             info: {
@@ -24,16 +32,33 @@ const app = new Elysia()
         set.headers['Location'] = '/login';
     })
     
-    // Chat page (show chat.ejs)
-    .get('/chat', ({ cookie }) => {
+    .get('/login', async () => {
+        return await renderView('login', { title: 'Login' }); 
+    })
+    
+    .get('/register', async () => {
+        return await renderView('register', { title: 'Signup' }); 
+    })
+    
+    // Chat page
+    .get('/chat', async ({ query, cookie }) => {
+        // 1. Check if logged in
         if (!cookie.userId?.value) {
-            // Not logged in, redirect
             return new Response('Redirect', {
                 status: 303,
                 headers: { 'Location': '/login' }
             });
         }
-        return Bun.file('./views/chat.ejs');
+        
+        // 2. Get the room name from the URL (e.g., /chat?room=gaming)
+        // If they just go to /chat, default to 'general'
+        const roomName = query.room || 'general'; 
+        
+        // 3. Pass BOTH userId and room to the EJS template!
+        return await renderView('chat', { 
+            userId: cookie.userId.value,
+            room: roomName
+        });
     })
     
     .listen(3000);

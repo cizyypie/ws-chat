@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - <%= title %></title>
+    <title>Signup - <%= title %></title>
     <style>
-        /* Clean, modern styling */
         body { 
             font-family: system-ui, -apple-system, sans-serif; 
             background-color: #f3f4f6; 
@@ -15,7 +14,7 @@
             height: 100vh; 
             margin: 0; 
         }
-        .login-container { 
+        .signup-container { 
             background: white; 
             padding: 2.5rem; 
             border-radius: 12px; 
@@ -83,18 +82,14 @@
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <h1>Welcome Back</h1>
-        
-        <!-- EJS Logic: Only show this div if we pass an 'error' variable from Elysia -->
+    <div class="signup-container">
+        <h1>Welcome!</h1>
         <% if (locals.error) { %>
             <div class="error-message">
                 <%= error %>
             </div>
         <% } %>
-
-        <!-- The form submits a POST request to /login -->
-        <form action="/login" method="POST">
+        <form action="/register" method="POST">
             <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" required autocomplete="username">
@@ -105,7 +100,7 @@
             </div>
             <button type="submit">Sign In</button>
         </form>
-        <p>Dont have an account ? <a href="/register">Signup</a></p>
+        <p>Already have an account ? <a href="/login">Login</a></p>
     </div>
 </body>
 </html>

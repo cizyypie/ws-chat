@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room: <%= room %> - Chat API</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background-color: #f3f4f6; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .chat-container { background: white; width: 100%; max-width: 600px; height: 80vh; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; }
+        .chat-header { background: #111827; color: white; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header h2 { margin: 0; font-size: 1.2rem; }
+        .leave-btn { color: #f87171; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+        .leave-btn:hover { color: #fca5a5; }
+        .chat-messages { flex: 1; padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; background: #fafafa; }
+        
+        /* Message Bubbles */
+        .message { max-width: 75%; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.95rem; line-height: 1.4; }
+        .message-header { font-size: 0.75rem; font-weight: bold; margin-bottom: 0.25rem; opacity: 0.7; }
+        .message.self { align-self: flex-end; background: #3b82f6; color: white; border-bottom-right-radius: 0; }
+        .message.other { align-self: flex-start; background: #e5e7eb; color: #1f2937; border-bottom-left-radius: 0; }
+        .message.system { align-self: center; background: transparent; color: #6b7280; font-size: 0.8rem; font-style: italic; }
+
+        .chat-input { padding: 1rem; background: white; border-top: 1px solid #e5e7eb; display: flex; gap: 0.5rem; }
+        .chat-input input { flex: 1; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+        .chat-input input:focus { outline: none; border-color: #3b82f6; }
+        .chat-input button { padding: 0.75rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .chat-input button:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2># <%= room %></h2>
+            <a href="/room" class="leave-btn">Leave Room</a>
+        </div>
+        
+        <div class="chat-messages" id="messages">
+            <div class="message system">Connecting to chat...</div>
+        </div>
+        
+        <form class="chat-input" id="chatForm">
+            <input type="text" id="messageInput" placeholder="Type a message..." required autocomplete="off">
+            <button type="submit">Send</button>
+        </form>
+    </div>
+
+    <script>
+        // Data injected by EJS from the server
+        const currentUser = "<%= userId %>";
+        const currentRoom = "<%= room %>";
+        
+        const messagesDiv = document.getElementById('messages');
+        const chatForm = document.getElementById('chatForm');
+        const messageInput = document.getElementById('messageInput');
+
+        // Connect to Elysia WebSocket (assuming you set up app.ws('/ws') in Elysia)
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws?room=${currentRoom}&user=${currentUser}`);
+
+        // Handle incoming messages
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            appendMessage(data);
+        };
+
+        ws.onopen = () => {
+            messagesDiv.innerHTML = '<div class="message system">Connected to room.</div>';
+        };
+
+        ws.onclose = () => {
+            appendMessage({ type: 'system', text: 'Disconnected from server.' });
+        };
+
+        // Handle sending messages
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            const payload = {
+                type: 'chat',
+                user: currentUser,
+                room: currentRoom,
+                text: text
+            };
+
+            // Send to server via WebSocket
+            ws.send(JSON.stringify(payload));
+            
+            // Render it locally immediately
+            appendMessage(payload);
+            messageInput.value = '';
+        });
+
+        // Helper to draw messages on the screen
+        function appendMessage(data) {
+            const msgDiv = document.createElement('div');
+            
+            if (data.type === 'system') {
+                msgDiv.className = 'message system';
+                msgDiv.textContent = data.text;
+            } else {
+                const isSelf = data.user === currentUser;
+                msgDiv.className = `message ${isSelf ? 'self' : 'other'}`;
+                
+                // Only show name for other people
+                const nameLabel = isSelf ? '' : `<div class="message-header">${data.user}</div>`;
+                msgDiv.innerHTML = `${nameLabel}<div>${data.text}</div>`;
+            }
+
+            messagesDiv.appendChild(msgDiv);
+            // Auto-scroll to bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>
