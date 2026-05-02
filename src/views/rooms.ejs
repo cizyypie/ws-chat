@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Dashboard - Chat API</title>
+    <style>
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            background-color: #f3f4f6; 
+            color: #1f2937; 
+            margin: 0; 
+            padding: 2rem; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 2.5rem; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+        }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 2rem; 
+            border-bottom: 1px solid #e5e7eb; 
+            padding-bottom: 1rem; 
+        }
+        .header h1 { margin: 0; font-size: 1.5rem; }
+        .logout-btn { color: #ef4444; text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+        .logout-btn:hover { color: #dc2626; text-decoration: underline; }
+
+        /* Grid layout for the two room lists */
+        .grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 2rem; 
+            margin-bottom: 2.5rem; 
+        }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+        
+        h2 { font-size: 1.2rem; color: #374151; margin-top: 0; margin-bottom: 1rem; }
+        
+        /* Room Cards */
+        .room-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .room-card { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 1rem; 
+            background: #f9fafb; 
+            border: 1px solid #e5e7eb; 
+            border-radius: 8px; 
+            text-decoration: none; 
+            color: inherit; 
+            transition: all 0.2s; 
+        }
+        .room-card:hover { border-color: #3b82f6; background: #eff6ff; transform: translateY(-1px); }
+        .room-name { font-weight: 600; }
+        .badge-enter { background: #3b82f6; color: white; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 500; }
+        .badge-join { background: #10b981; color: white; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 500; }
+        .empty-state { color: #6b7280; font-style: italic; font-size: 0.9rem; padding: 1rem; text-align: center; background: #f3f4f6; border-radius: 8px; }
+
+        /* Create Room Form */
+        .create-room-section { 
+            background: #f8fafc; 
+            padding: 1.5rem; 
+            border-radius: 8px; 
+            border: 1px solid #e2e8f0; 
+        }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #4b5563; font-size: 0.875rem; }
+        .input-group { display: flex; gap: 0.5rem; }
+        input[type="text"] { 
+            flex: 1; 
+            padding: 0.75rem; 
+            border: 1px solid #d1d5db; 
+            border-radius: 6px; 
+            font-size: 1rem; 
+        }
+        input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+        button { 
+            background: #111827; 
+            color: white; 
+            border: none; 
+            padding: 0.75rem 1.5rem; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 500; 
+            transition: 0.2s; 
+        }
+        button:hover { background: #374151; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome, <%= username %>!</h1>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+
+        <div class="grid">
+            <!-- Section 1: The User's Rooms -->
+            <div>
+                <h2>Your Rooms</h2>
+                <div class="room-list">
+                    <% if (locals.userRooms && userRooms.length > 0) { %>
+                        <% userRooms.forEach(function(room) { %>
+                            <a href="/chat?room=<%= room %>" class="room-card">
+                                <span class="room-name"># <%= room %></span>
+                                <span class="badge-enter">Enter</span>
+                            </a>
+                        <% }); %>
+                    <% } else { %>
+                        <div class="empty-state">You haven't joined any rooms yet.</div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Section 2: All Available Rooms -->
+            <div>
+                <h2>Available Rooms</h2>
+                <div class="rooms">
+                    <% if (locals.availableRooms && availableRooms.length > 0) { %>
+                        <% availableRooms.forEach(function(room) { %>
+                            <a href="/chat?room=<%= room %>" class="room-card">
+                                <span class="room-name"># <%= room %></span>
+                                <span class="badge-join">Join</span>
+                            </a>
+                        <% }); %>
+                    <% } else { %>
+                        <div class="empty-state">No public rooms available right now.</div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+        <!-- Section 3: Create a New Room Form -->
+        <div class="create-room-section">
+            <h2 style="margin-top: 0;">Create a New Room</h2>
+            <form id="createRoomForm"></form>
+            <form action="/rooms" method="POST">
+                <div class="form-group">
+                    <label for="roomName">Room Name (No spaces allowed)</label>
+                    <div class="input-group">
+                        <input type="text" id="roomName" name="name" placeholder="e.g., project-alpha" required pattern="[a-zA-Z0-9-]+" title="Only use letters, numbers, and hyphens">
+                        <button type="submit">Create</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        document.getElementById('createRoomForm').addEventListener('submit', async function(e) {
+            e.preventDefault(); // Stop the browser from doing a standard form navigation
+            
+            const nameInput = document.getElementById('roomName').value;
+            
+            try {
+                // Send a JSON POST request to your Elysia '/room' route
+                const response = await fetch('/room', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    // Keys here must match your Elysia t.Object schema
+                    body: JSON.stringify({ name: nameInput })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                 window.location.reload(); 
+                } else {
+                    alert('Failed to create room: ' + (data.message || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Something went wrong connecting to the server.');
+            }
+        });
+    </script>
+</body>
+</html>
