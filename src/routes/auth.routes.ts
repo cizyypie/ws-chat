@@ -1,25 +1,27 @@
-import { Elysia, t } from 'elysia'; // 🛠️ Fixed: Changed 't00000' to 't'
+import { Elysia, t } from 'elysia';
 import { AuthService } from '../services/auth.service';
-// 🛠️ Fixed: Deleted the '@elysiajs/cookie' import completely
 
 const authService = new AuthService();
 
 export function setupAuthRoutes(app: Elysia) {
     
-    app.get('/login', ({ cookie }) => {
+    // GET /login - Show login page
+    app.get('/login', ({ cookie }: any) => {
+        // Check if already logged in
         const userId = cookie.userId?.value;
         if (userId) {
             return new Response('Redirect', { 
                 status: 303, 
-                headers: { 'Location': '/chat' } 
+                headers: { 'Location': '/rooms' } 
             });
         }
         
         return Bun.file('./views/login.ejs');
     });
 
+    // POST /login - Handle login form
     app.post('/login',
-        async ({ body, cookie, set }) => {
+        async ({ body, cookie, set }: any) => {
             const user = await authService.validateUser(
                 body.username,
                 body.password
@@ -31,12 +33,12 @@ export function setupAuthRoutes(app: Elysia) {
                     message: 'Invalid username or password' 
                 };
             }
-            
+
             cookie.userId.value = String(user.id);
             cookie.username.value = user.username;
             
             set.status = 303;
-            set.headers['Location'] = '/chat';
+            set.headers['Location'] = '/rooms';
             return null;
         },
         {
@@ -47,14 +49,14 @@ export function setupAuthRoutes(app: Elysia) {
         }
     );
     
-    // Route 3: Show register page
+    // GET /register - Show register page
     app.get('/register', () => {
         return Bun.file('./views/register.ejs');
     });
     
-    // Route 4: Handle registration
+    // POST /register - Handle registration
     app.post('/register',
-        async ({ body, cookie, set }) => {
+        async ({ body, cookie, set }: any) => {
             const result = await authService.registerUser(
                 body.username,
                 body.password
@@ -64,16 +66,16 @@ export function setupAuthRoutes(app: Elysia) {
                 return { success: false, message: result.message };
             }
             
-            // Note: Make sure result.user is defined in your AuthService when success is true!
-            const user = result.user!; 
+            const user = result.user;
+            if (!user) {
+                return { success: false, message: 'User not created' };
+            }
             
-            // Set cookie
             cookie.userId.value = String(user.id);
             cookie.username.value = user.username;
             
-            // Redirect to chat
             set.status = 303;
-            set.headers['Location'] = '/chat';
+            set.headers['Location'] = '/rooms';
             return null;
         },
         {
@@ -84,10 +86,10 @@ export function setupAuthRoutes(app: Elysia) {
         }
     );
     
-    // Route 5: Logout
-    app.get('/logout', ({ cookie, set }) => {
-        cookie.userId.remove();
-        cookie.username.remove();
+    // GET /logout - Clear cookies
+    app.get('/logout', ({ cookie, set }: any) => {
+        cookie.userId.value = '';
+        cookie.username.value = '';
         
         set.status = 303;
         set.headers['Location'] = '/login';
