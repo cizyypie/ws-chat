@@ -3,6 +3,7 @@ import { swagger } from '@elysiajs/swagger';
 import { cors } from '@elysiajs/cors';
 import { staticPlugin } from '@elysiajs/static';
 import { html } from '@elysiajs/html';
+import { cookie } from '@elysiajs/cookie'; // ✅ ADD THIS IMPORT
 import ejs from 'ejs';            
 import { apiRoutes } from './routes/index';
 
@@ -15,7 +16,8 @@ const renderView = async (view: string, data: object = {}) => {
 const app = new Elysia()
     .use(cors())
     .use(staticPlugin())
-    .use(html())                     
+    .use(html())
+    .use(cookie())
     .use(swagger({
         documentation: {
             info: {
@@ -27,7 +29,7 @@ const app = new Elysia()
     .use(apiRoutes)
     
     // Home page redirect
-    .get('/', ({ set }) => {
+    .get('/', ({ set }: any) => {
         set.status = 303;
         set.headers['Location'] = '/login';
     })
@@ -40,21 +42,28 @@ const app = new Elysia()
         return await renderView('register', { title: 'Signup' }); 
     })
     
-    // Chat page
-    .get('/chat', async ({ query, cookie }) => {
-        // 1. Check if logged in
+    .get('/rooms', async ({ cookie, set }: any) => {
         if (!cookie.userId?.value) {
-            return new Response('Redirect', {
-                status: 303,
-                headers: { 'Location': '/login' }
-            });
+            set.status = 303;
+            set.headers['Location'] = '/login';
+            return null;
+        }
+        return await renderView('rooms', { 
+            userId: cookie.userId.value,
+            username: cookie.username?.value || 'User'
+        });
+    })
+    
+    // Chat page
+    .get('/chat', async ({ query, cookie, set }: any) => {
+        if (!cookie.userId?.value) {
+            set.status = 303;
+            set.headers['Location'] = '/login';
+            return null;
         }
         
-        // 2. Get the room name from the URL (e.g., /chat?room=gaming)
-        // If they just go to /chat, default to 'general'
         const roomName = query.room || 'general'; 
         
-        // 3. Pass BOTH userId and room to the EJS template!
         return await renderView('chat', { 
             userId: cookie.userId.value,
             room: roomName
