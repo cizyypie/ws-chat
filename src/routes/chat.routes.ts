@@ -3,30 +3,31 @@ import { ChatService } from '../services/chat.service';
 
 const chatService = new ChatService();
 
-const requireAuth = (userId?: string) => {
-    if (!userId) throw new Error('Not authenticated');
-    return parseInt(userId);
+const requireAuth = (cookieValue: string | undefined): number => {
+    if (!cookieValue) {
+        throw new Error('Not authenticated');
+    }
+    return parseInt(cookieValue);
 };
 
 export function setupChatRoutes(app: Elysia) {
     
-    // Route 1: Get messages in room
     // GET /rooms/:roomId/messages
     app.get('/rooms/:roomId/messages',
-        async ({ params, query }) => {
-            const roomId = parseInt(params.roomId);
-            const limit = parseInt(query.limit || '50');
+        async ({ params, query }: any) => {
+            const roomId = parseInt(params.roomId as string);
+            const limit = parseInt((query.limit as string) || '50');
             
             return await chatService.getRecentMessagesByRoom(roomId, limit);
         }
     );
     
-    // Route 2: Send message
     // POST /rooms/:roomId/messages
     app.post('/rooms/:roomId/messages',
-        async ({ params, body, cookie }) => {
-            const userId = requireAuth(cookie.userId?.value);
-            const roomId = parseInt(params.roomId);
+        async ({ params, body, cookie }: any) => {
+            // ✅ Type the cookie value
+            const userId = requireAuth(cookie.userId?.value as string | undefined);
+            const roomId = parseInt(params.roomId as string);
             
             const message = await chatService.saveMessage(
                 userId,
@@ -43,12 +44,11 @@ export function setupChatRoutes(app: Elysia) {
         }
     );
     
-    // Route 3: Edit message (BONUS)
     // PUT /messages/:messageId
     app.put('/messages/:messageId',
-        async ({ params, body, cookie }) => {
-            const userId = requireAuth(cookie.userId?.value);
-            const messageId = parseInt(params.messageId);
+        async ({ params, body, cookie }: any) => {
+            const userId = requireAuth(cookie.userId?.value as string | undefined);
+            const messageId = parseInt(params.messageId as string);
             
             const message = await chatService.editMessage(
                 messageId,
@@ -72,12 +72,11 @@ export function setupChatRoutes(app: Elysia) {
         }
     );
     
-    // Route 4: Delete message (BONUS)
     // DELETE /messages/:messageId
     app.delete('/messages/:messageId',
-        async ({ params, cookie }) => {
-            const userId = requireAuth(cookie.userId?.value);
-            const messageId = parseInt(params.messageId);
+        async ({ params, cookie }: any) => {
+            const userId = requireAuth(cookie.userId?.value as string | undefined);
+            const messageId = parseInt(params.messageId as string);
             
             const success = await chatService.deleteMessage(messageId, userId);
             
