@@ -4,94 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - <%= title %></title>
-    <style>
-        body { 
-            font-family: system-ui, -apple-system, sans-serif; 
-            background-color: #f3f4f6; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin: 0; 
-        }
-        .login-container { 
-            background: white; 
-            padding: 2.5rem; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
-            width: 100%; 
-            max-width: 350px; 
-        }
-        h1 { 
-            text-align: center; 
-            color: #1f2937; 
-            margin-top: 0;
-            margin-bottom: 1.5rem; 
-            font-size: 1.5rem;
-        }
-        .form-group { 
-            margin-bottom: 1.2rem; 
-        }
-        label { 
-            display: block; 
-            margin-bottom: 0.5rem; 
-            color: #4b5563; 
-            font-size: 0.875rem;
-            font-weight: 500; 
-        }
-        input[type="text"], input[type="password"] { 
-            width: 100%; 
-            padding: 0.75rem; 
-            border: 1px solid #d1d5db; 
-            border-radius: 6px; 
-            box-sizing: border-box; 
-            font-size: 1rem;
-        }
-        input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-        }
-        button { 
-            width: 100%; 
-            padding: 0.75rem; 
-            background-color: #111827; 
-            color: white; 
-            border: none; 
-            border-radius: 6px; 
-            font-size: 1rem; 
-            font-weight: 500;
-            cursor: pointer; 
-            transition: background-color 0.2s; 
-            margin-top: 0.5rem;
-        }
-        button:hover { 
-            background-color: #374151; 
-        }
-        .error-message { 
-            background-color: #fee2e2; 
-            color: #b91c1c; 
-            padding: 0.75rem; 
-            border-radius: 6px; 
-            margin-bottom: 1.5rem; 
-            text-align: center; 
-            font-size: 0.875rem;
-            border: 1px solid #f87171;
-        }
-    </style>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
+<body class="centered-layout">
     <div class="login-container">
         <h1>Welcome Back</h1>
         
-        <!-- EJS Logic: Only show this div if we pass an 'error' variable from Elysia -->
-        <% if (locals.error) { %>
+         <% if (locals.error) { %>
             <div class="error-message">
                 <%= error %>
             </div>
         <% } %>
 
-        <!-- The form submits a POST request to /login -->
         <form action="/login" method="POST">
             <div class="form-group">
                 <label for="username">Username</label>

@@ -18,7 +18,7 @@ const renderView = async (view: string, data: object = {}) => {
 
 const app = new Elysia()
     .use(cors())
-    .use(staticPlugin())
+    .use(staticPlugin({ assets: 'public', prefix: '/' }))
     .use(html())
     .use(cookie())
     .use(swagger({
