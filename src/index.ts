@@ -1,11 +1,14 @@
-import { Elysia, t } from 'elysia';
+import { Elysia } from 'elysia';
 import { swagger } from '@elysiajs/swagger';
 import { cors } from '@elysiajs/cors';
 import { staticPlugin } from '@elysiajs/static';
 import { html } from '@elysiajs/html';
-import { cookie } from '@elysiajs/cookie'; // ✅ ADD THIS IMPORT
+import { cookie } from '@elysiajs/cookie';
 import ejs from 'ejs';            
 import { apiRoutes } from './routes/index';
+import { ViewService } from './services/view.service'; 
+
+const viewService = new ViewService(); 
 
 const renderView = async (view: string, data: object = {}) => {
   const filePath = `${import.meta.dir}/views/${view}.ejs`;
@@ -28,7 +31,6 @@ const app = new Elysia()
     }))
     .use(apiRoutes)
     
-    // Home page redirect
     .get('/', ({ set }: any) => {
         set.status = 303;
         set.headers['Location'] = '/login';
@@ -48,13 +50,17 @@ const app = new Elysia()
             set.headers['Location'] = '/login';
             return null;
         }
+
+        const userId = parseInt(cookie.userId.value);
+        const pageData = await viewService.getRoomsPageData(userId);
+
         return await renderView('rooms', { 
             userId: cookie.userId.value,
-            username: cookie.username?.value || 'User'
+            username: cookie.username?.value || 'User',
+            ...pageData  
         });
     })
     
-    // Chat page
     .get('/chat', async ({ query, cookie, set }: any) => {
         if (!cookie.userId?.value) {
             set.status = 303;
