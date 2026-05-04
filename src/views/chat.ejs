@@ -10,87 +10,40 @@
     <div class="chat-container">
         <div class="chat-header">
             <h2># <%= room %></h2>
-            <a href="/room" class="leave-btn">Leave Room</a>
+            <a href="/rooms" class="leave-btn">Back to Rooms</a>
         </div>
         
         <div class="chat-messages" id="messages">
-            <div class="message system">Connecting to chat...</div>
+            <div class="message system">Chat room ready. WebSocket coming in Phase 5...</div>
         </div>
         
-        <form class="chat-input" id="chatForm">
-            <input type="text" id="messageInput" placeholder="Type a message..." required autocomplete="off">
-            <button type="submit">Send</button>
+        <form class="chat-input" id="messageForm">
+            <input 
+                type="text" 
+                id="messageInput" 
+                placeholder="Type a message..." 
+                required 
+                autocomplete="off"
+                disabled>
+            <button type="submit" disabled>Send</button>
         </form>
     </div>
 
     <script>
-        // Data injected by EJS from the server
-        const currentUser = "<%= userId %>";
-        const currentRoom = "<%= room %>";
+        const userId = "<%= userId %>";
+        const roomName = "<%= room %>";
         
-        const messagesDiv = document.getElementById('messages');
-        const chatForm = document.getElementById('chatForm');
+        console.log('Chat page ready for room:', roomName);
+        console.log('User ID:', userId);
+        
+        const messageForm = document.getElementById('messageForm');
         const messageInput = document.getElementById('messageInput');
-
-        // Connect to Elysia WebSocket
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws?room=${currentRoom}&user=${currentUser}`);
-
-        // Handle incoming messages
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            appendMessage(data);
-        };
-
-        ws.onopen = () => {
-            messagesDiv.innerHTML = '<div class="message system">Connected to room.</div>';
-        };
-
-        ws.onclose = () => {
-            appendMessage({ type: 'system', text: 'Disconnected from server.' });
-        };
-
-        // Handle sending messages
-        chatForm.addEventListener('submit', (e) => {
+        
+        messageForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const text = messageInput.value.trim();
-            if (!text) return;
-
-            const payload = {
-                type: 'chat',
-                user: currentUser,
-                room: currentRoom,
-                text: text
-            };
-
-            // Send to server via WebSocket
-            ws.send(JSON.stringify(payload));
-            
-            // Render it locally immediately
-            appendMessage(payload);
-            messageInput.value = '';
+            console.log('WebSocket not implemented yet!');
+            alert('Chat coming soon! Phase 5: WebSocket Implementation');
         });
-
-        // Helper to draw messages on the screen
-        function appendMessage(data) {
-            const msgDiv = document.createElement('div');
-            
-            if (data.type === 'system') {
-                msgDiv.className = 'message system';
-                msgDiv.textContent = data.text;
-            } else {
-                const isSelf = data.user === currentUser;
-                msgDiv.className = `message ${isSelf ? 'self' : 'other'}`;
-                
-                // Only show name for other people
-                const nameLabel = isSelf ? '' : `<div class="message-header">${data.user}</div>`;
-                msgDiv.innerHTML = `${nameLabel}<div>${data.text}</div>`;
-            }
-
-            messagesDiv.appendChild(msgDiv);
-            // Auto-scroll to bottom
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
     </script>
 </body>
 </html>

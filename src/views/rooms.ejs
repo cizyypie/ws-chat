@@ -1,3 +1,4 @@
+<!-- src/views/rooms.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,7 +15,7 @@
         </div>
 
         <div class="grid">
-            <!-- Section 1: The User's Rooms -->
+            <!-- Your Rooms -->
             <div>
                 <h2>Your Rooms</h2>
                 <div class="room-list">
@@ -31,7 +32,7 @@
                 </div>
             </div>
 
-            <!-- Section 2: All Available Rooms -->
+            <!-- Available Rooms -->
             <div>
                 <h2>Available Rooms</h2>
                 <div class="room-list">
@@ -49,12 +50,12 @@
             </div>
         </div>
 
-        <!-- Section 3: Create a New Room Form -->
+        <!-- Create Room - SIMPLE FORM (NO JAVASCRIPT!) -->
         <div class="create-room-section">
             <h2 style="margin-top: 0;">Create a New Room</h2>
-            <form id="createRoomForm">
+            <form action="/rooms" method="POST">
                 <div class="form-group">
-                    <label for="roomName">Room Name (No spaces allowed)</label>
+                    <label for="roomName">Room Name</label>
                     <div class="input-group">
                         <input 
                             type="text" 
@@ -70,34 +71,5 @@
             </form>
         </div>
     </div>
-
-    <script>
-        document.getElementById('createRoomForm').addEventListener('submit', async function(e) {
-            e.preventDefault(); 
-            
-            const nameInput = document.getElementById('roomName').value;
-            
-            try {
-                const response = await fetch('/room', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ name: nameInput })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    window.location.reload(); 
-                } else {
-                    alert('Failed to create room: ' + (data.message || 'Unknown error'));
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Something went wrong connecting to the server.');
-            }
-        });
-    </script>
 </body>
 </html>
