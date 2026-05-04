@@ -6,18 +6,13 @@ import { html } from "@elysiajs/html";
 import { cookie } from "@elysiajs/cookie";
 import ejs from "ejs";
 import { apiRoutes } from "./routes/index";
-import {
-  AuthService,
-  ChatService,
-  RoomService,
-  ViewService,
-  WebSocketService,
-} from "./services/index.service";
+import { AuthService, ChatService, RoomService,RoomMembersService, ViewService, WebSocketService,} from "./services/index.service";
 
 const viewService = new ViewService(),
   wsService = new WebSocketService(),
   authService = new AuthService(),
   chatService = new ChatService(),
+  roomMembersService = new RoomMembersService(),
   roomService = new RoomService();
 
 const renderView = async (view: string, data: object = {}) => {
@@ -121,13 +116,17 @@ const app = new Elysia()
             const roomId = parseInt(data.roomId);
             const username = data.username;
 
+            await roomMembersService.joinRoom(userId, roomId);
             wsService.joinRoom(userId, roomId, ws);
 
+            const recentMessages = await chatService.getRecentMessagesByRoom(roomId, 20);
+    
             ws.send(
               JSON.stringify({
                 type: "joined",
                 roomId,
                 userCount: wsService.getRoomUserCount(roomId),
+                history: recentMessages
               }),
             );
 

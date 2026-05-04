@@ -1,335 +1,352 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room: <%= room %> - Chat API</title>
-    <link rel="stylesheet" href="/css/style.css">
-</head>
-<body class="centered-layout">
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body class="centered-layout">
     <div class="chat-container">
-        <div class="chat-header">
-            <h2># <%= room %></h2>
-            <div style="display: flex; gap: 1rem; align-items: center;">
-                <span id="userCount" style="color: #f0f0f0; font-size: 0.9rem;">0 online</span>
-                <a href="/rooms" class="leave-btn">Back to Rooms</a>
-            </div>
+      <div class="chat-header">
+        <h2># <%= room %></h2>
+        <div style="display: flex; gap: 1rem; align-items: center">
+          <span id="userCount" style="color: #f0f0f0; font-size: 0.9rem"
+            >0 online</span
+          >
+          <a href="/rooms" class="leave-btn">Back to Rooms</a>
         </div>
-        
-        <div class="chat-messages" id="messages">
-            <div class="message system">Connecting to room...</div>
-        </div>
-        
-        <form class="chat-input" id="messageForm">
-            <input 
-                type="text" 
-                id="messageInput" 
-                placeholder="Type a message..." 
-                required 
-                autocomplete="off">
-            <button type="submit">Send</button>
-        </form>
+      </div>
+
+      <div class="chat-messages" id="messages">
+        <div class="message system">Connecting to room...</div>
+      </div>
+
+      <form class="chat-input" id="messageForm">
+        <input
+          type="text"
+          id="messageInput"
+          placeholder="Type a message..."
+          required
+          autocomplete="off"
+        />
+        <button type="submit">Send</button>
+      </form>
     </div>
 
     <script>
-        // ===== Chat Client =====
-        // This runs in the browser and connects to WebSocket
-        
-        class ChatClient {
-            constructor(userId, username, roomName) {
-                this.userId = userId;
-                this.username = username;
-                this.roomName = roomName;
-                this.roomId = null; // Will be set after joining
-                this.ws = null;
-                
-                // DOM elements
-                this.messagesDiv = document.getElementById('messages');
-                this.messageForm = document.getElementById('messageForm');
-                this.messageInput = document.getElementById('messageInput');
-                this.userCountSpan = document.getElementById('userCount');
-                
-                // Connect to WebSocket
-                this.connect();
-            }
-            
-            connect() {
-                // Determine protocol (ws or wss for secure)
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const wsUrl = `${protocol}//${window.location.host}/ws`;
-                
-                console.log('Connecting to:', wsUrl);
-                
-                this.ws = new WebSocket(wsUrl);
-                
-                // Connection opened
-                this.ws.onopen = () => {
-                    console.log('✅ WebSocket connected!');
-                    this.messagesDiv.innerHTML = '';
-                    this.showSystemMessage('Connecting to room...');
-                    
-                    // TODO: Get roomId from API or decode from room name
-                    // For now, we need to fetch the room
-                    this.joinRoom();
-                };
-                
-                // Message received
-                this.ws.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    this.handleMessage(data);
-                };
-                
-                // Connection closed
-                this.ws.onclose = () => {
-                    console.log('❌ WebSocket disconnected');
-                    this.showSystemMessage('Disconnected from server. Refresh to reconnect.');
-                    this.messageInput.disabled = true;
-                };
-                
-                // Error
-                this.ws.onerror = (error) => {
-                    console.error('WebSocket error:', error);
-                    this.showSystemMessage('Connection error. Check console.');
-                };
-                
-                // Form submission
-                this.messageForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.sendMessage();
-                });
-           
-            const roomId = "<%= roomId %>"; 
+      // ===== Chat Client =====
+      class ChatClient {
+        constructor(userId, username, roomName, roomId) {
+          this.userId = userId;
+          this.username = username;
+          this.roomName = roomName;
+          this.roomId = roomId; // Passed from server
+          this.ws = null;
+
+          // DOM elements
+          this.messagesDiv = document.getElementById("messages");
+          this.messageForm = document.getElementById("messageForm");
+          this.messageInput = document.getElementById("messageInput");
+          this.userCountSpan = document.getElementById("userCount");
+
+          console.log("Chat initialized:", {
+            userId: this.userId,
+            username: this.username,
+            roomId: this.roomId,
+          });
+
+          // Connect to WebSocket
+          this.connect();
         }
-            /**
-             * Join room via WebSocket
-             * First, we need to find the roomId by name from the server
-             */
-            async joinRoom() {
-                try {
-                    // Get all rooms to find the ID
-                    const response = await fetch('/rooms');
-                    const htmlText = await response.text();
-                    this.roomId = parseInt(roomId);
-                    // Parse HTML to find room... actually, better approach:
-                    // We should get roomId from the backend
-                    // For now, use localStorage or query API
-                    
-                    // SIMPLE APPROACH: Query the rooms API endpoint
-                    const roomsResponse = await fetch(`/rooms`);
-                    
-                    // Actually, let's try a different approach
-                    // Store roomId in query param or use a rest call
-                    
-                    // For MVP: Use a simple fetch to get all rooms and find by name
-                    const roomsList = await this.getRoomIdByName(this.roomName);
-                    
-                    if (!roomsList) {
-                        this.showSystemMessage('Room not found. Create it first.');
-                        return;
-                    }
-                    
-                    this.roomId = roomsList;
-                    
-                    // Send join message
-                    this.ws.send(JSON.stringify({
-                        type: 'join',
-                        userId: this.userId,
-                        roomId: this.roomId,
-                        username: this.username
-                    }));
-                    
-                } catch (error) {
-                    console.error('Error joining room:', error);
-                    this.showSystemMessage('Error joining room.');
-                }
+
+        connect() {
+          const protocol =
+            window.location.protocol === "https:" ? "wss:" : "ws:";
+          const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+          console.log("🔗 Connecting to WebSocket:", wsUrl);
+
+          this.ws = new WebSocket(wsUrl);
+
+          // Connection opened
+          this.ws.onopen = () => {
+            console.log("WebSocket connected!");
+            this.messagesDiv.innerHTML = "";
+            this.showSystemMessage("Connected! Joining room...");
+            this.joinRoom();
+          };
+
+          // Message received
+          this.ws.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              console.log("📥 Received:", data.type);
+              this.handleMessage(data);
+            } catch (error) {
+              console.error("Error parsing message:", error);
             }
-            
-            /**
-             * Get room ID by room name
-             * (In a real app, you'd pass this from the server)
-             */
-            async getRoomIdByName(roomName) {
-                try {
-                    // This is a workaround - in production, pass roomId from server
-                    // For now, we'll use a hack: store it in sessionStorage when clicking room
-                    const storedId = sessionStorage.getItem(`room_${roomName}`);
-                    if (storedId) return parseInt(storedId);
-                    
-                    // Or fetch from API
-                    const response = await fetch(`/api/rooms/search?name=${roomName}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        return data.id;
-                    }
-                    
-                    return null;
-                } catch (error) {
-                    console.error('Error getting room ID:', error);
-                    return null;
-                }
-            }
-            
-            /**
-             * Handle incoming WebSocket messages
-             */
-            handleMessage(data) {
-                switch (data.type) {
-                    case 'joined':
-                        this.showSystemMessage(`Connected! ${data.userCount} user(s) online`);
-                        this.updateUserCount(data.userCount);
-                        break;
-                    
-                    case 'message':
-                        this.displayMessage(data);
-                        break;
-                    
-                    case 'user_joined':
-                        this.showSystemMessage(`${data.username} joined. (${data.userCount} online)`);
-                        this.updateUserCount(data.userCount);
-                        break;
-                    
-                    case 'user_left':
-                        this.showSystemMessage(`${data.username} left. (${data.userCount} online)`);
-                        this.updateUserCount(data.userCount);
-                        break;
-                    
-                    case 'message_edited':
-                        this.editMessageDisplay(data.messageId, data.content);
-                        break;
-                    
-                    case 'message_deleted':
-                        this.deleteMessageDisplay(data.messageId);
-                        break;
-                    
-                    case 'error':
-                        this.showSystemMessage(`Error: ${data.message}`);
-                        break;
-                    
-                    default:
-                        console.warn('Unknown message type:', data.type);
-                }
-            }
-            
-            /**
-             * Send message to server
-             */
-            sendMessage() {
-                const content = this.messageInput.value.trim();
-                if (!content || !this.roomId) return;
-                
-                this.ws.send(JSON.stringify({
-                    type: 'message',
-                    userId: this.userId,
-                    roomId: this.roomId,
-                    username: this.username,
-                    content
-                }));
-                
-                // Display locally immediately (optimistic update)
-                this.displayMessage({
-                    username: this.username,
-                    content,
-                    createdAt: new Date().toISOString(),
-                    isOwn: true
+          };
+
+          // Connection closed
+          this.ws.onclose = () => {
+            console.log(" WebSocket disconnected");
+            this.showSystemMessage("Disconnected from server.");
+            this.messageInput.disabled = true;
+          };
+
+          // Error
+          this.ws.onerror = (error) => {
+            console.error("WebSocket error:", error);
+            this.showSystemMessage("Connection error!");
+          };
+
+          // Form submission
+          this.messageForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            this.sendMessage();
+          });
+        }
+
+        /**
+         * Send join message to server
+         */
+        joinRoom() {
+          console.log("Sending join message...");
+          this.ws.send(
+            JSON.stringify({
+              type: "join",
+              userId: this.userId,
+              roomId: this.roomId,
+              username: this.username,
+            }),
+          );
+        }
+
+        /**
+         * Handle incoming WebSocket messages
+         */
+        handleMessage(data) {
+          switch (data.type) {
+            case "joined":
+              console.log("Joined room!");
+              this.showSystemMessage(`Connected! ${data.userCount} online`);
+              this.updateUserCount(data.userCount);
+
+              if (data.history && Array.isArray(data.history)) {
+                console.log('Loading', data.history.length, 'past messages');
+                data.history.forEach(msg => {
+                    const isOwn = parseInt(msg.userId) === parseInt(this.userId);
+                    this.displayMessage({
+                        id: msg.id,
+                        username: msg.username,
+                        content: msg.content,
+                        createdAt: msg.createdAt,
+                        isOwn: isOwn
+                    });
                 });
-                
-                this.messageInput.value = '';
-                this.messageInput.focus();
             }
-            
-            /**
-             * Display a single message
-             */
-            displayMessage(data) {
-                const msgDiv = document.createElement('div');
-                msgDiv.className = `message ${data.isOwn ? 'self' : 'other'}`;
-                if (data.id) msgDiv.id = `msg-${data.id}`;
-                
-                const time = new Date(data.createdAt).toLocaleTimeString();
-                
-                if (data.isOwn) {
-                    msgDiv.innerHTML = `<div>${data.content}</div><small style="opacity: 0.7;">${time}</small>`;
-                } else {
-                    msgDiv.innerHTML = `
+              break;
+
+            case "message":
+              console.log("New message from", data.username);
+              this.displayMessage(data);
+              break;
+
+            case "user_joined":
+              this.showSystemMessage(
+                `${data.username} joined (${data.userCount} online)`,
+              );
+              this.updateUserCount(data.userCount);
+              break;
+
+            case "user_left":
+              this.showSystemMessage(
+                `${data.username} left (${data.userCount} online)`,
+              );
+              this.updateUserCount(data.userCount);
+              break;
+
+            case "message_edited":
+              this.editMessageDisplay(data.messageId, data.content);
+              break;
+
+            case "message_deleted":
+              this.deleteMessageDisplay(data.messageId);
+              break;
+
+            case "error":
+              console.error("Server error:", data.message);
+              this.showSystemMessage(`Error: ${data.message}`);
+              break;
+
+            default:
+              console.warn("Unknown message type:", data.type);
+          }
+        }
+
+        /**
+         * Send message to server
+         */
+        sendMessage() {
+          const content = this.messageInput.value.trim();
+
+          console.log("Attempting to send:", {
+            content,
+            roomId: this.roomId,
+            wsReady: this.ws && this.ws.readyState === WebSocket.OPEN,
+          });
+
+          if (!content) {
+            console.warn("Empty message");
+            return;
+          }
+
+          if (!this.roomId) {
+            console.error("Room ID not set!");
+            this.showSystemMessage("Error: Room ID not set");
+            return;
+          }
+
+          if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            console.error("WebSocket not ready");
+            this.showSystemMessage("Error: Not connected");
+            return;
+          }
+
+          // Send message to server
+          const message = {
+            type: "message",
+            userId: this.userId,
+            roomId: this.roomId,
+            username: this.username,
+            content,
+          };
+
+          console.log("Sending message:", message);
+          this.ws.send(JSON.stringify(message));
+
+          // Display locally immediately (optimistic update)
+          this.displayMessage({
+            username: this.username,
+            content,
+            createdAt: new Date().toISOString(),
+            isOwn: true,
+          });
+
+          this.messageInput.value = "";
+          this.messageInput.focus();
+        }
+
+        /**
+         * Display a single message
+         */
+        displayMessage(data) {
+          const msgDiv = document.createElement("div");
+          msgDiv.className = `message ${data.isOwn ? "self" : "other"}`;
+          if (data.id) msgDiv.id = `msg-${data.id}`;
+
+          const time = new Date(data.createdAt).toLocaleTimeString();
+
+          if (data.isOwn) {
+            msgDiv.innerHTML = `<div>${data.content}</div><small style="opacity: 0.7;">${time}</small>`;
+          } else {
+            msgDiv.innerHTML = `
                         <div class="message-header">${data.username} ${time}</div>
                         <div>${data.content}</div>
                     `;
-                }
-                
-                this.messagesDiv.appendChild(msgDiv);
-                this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;
-            }
-            
-            /**
-             * Show system message (join/leave/etc)
-             */
-            showSystemMessage(text) {
-                const msgDiv = document.createElement('div');
-                msgDiv.className = 'message system';
-                msgDiv.textContent = text;
-                this.messagesDiv.appendChild(msgDiv);
-                this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;
-            }
-            
-            /**
-             * Update user count display
-             */
-            updateUserCount(count) {
-                this.userCountSpan.textContent = `${count} online`;
-            }
-            
-            /**
-             * Edit message display (BONUS)
-             */
-            editMessageDisplay(messageId, newContent) {
-                const el = document.getElementById(`msg-${messageId}`);
-                if (el) {
-                    el.textContent = newContent + ' (edited)';
-                }
-            }
-            
-            /**
-             * Delete message display (BONUS)
-             */
-            deleteMessageDisplay(messageId) {
-                const el = document.getElementById(`msg-${messageId}`);
-                if (el) {
-                    el.textContent = '[Message deleted]';
-                    el.style.opacity = '0.5';
-                }
-            }
-            
-            /**
-             * Cleanup on page unload
-             */
-            disconnect() {
-                if (this.ws) {
-                    this.ws.send(JSON.stringify({
-                        type: 'leave',
-                        userId: this.userId,
-                        roomName: this.roomName
-                    }));
-                    this.ws.close();
-                }
-            }
+          }
+
+          this.messagesDiv.appendChild(msgDiv);
+          this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;
         }
-        
-        // ===== Initialize Chat =====
-        const userId = "<%= userId %>";
-        const username = "<%= username || 'Guest' %>";
-        const roomName = "<%= room %>";
-        
-        console.log('Chat page loaded for:', roomName);
-        
-        const chatClient = new ChatClient(userId, username, roomName);
-        
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', () => {
-            chatClient.disconnect();
-        });
-        
-        // Make available globally for debugging
-        window.chatClient = chatClient;
+
+        /**
+         * Show system message
+         */
+        showSystemMessage(text) {
+          const msgDiv = document.createElement("div");
+          msgDiv.className = "message system";
+          msgDiv.textContent = text;
+          this.messagesDiv.appendChild(msgDiv);
+          this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;
+        }
+
+        /**
+         * Update user count
+         */
+        updateUserCount(count) {
+          this.userCountSpan.textContent = `${count} online`;
+        }
+
+        /**
+         * Edit message display
+         */
+        editMessageDisplay(messageId, newContent) {
+          const el = document.getElementById(`msg-${messageId}`);
+          if (el) {
+            el.textContent = newContent + " (edited)";
+          }
+        }
+
+        /**
+         * Delete message display
+         */
+        deleteMessageDisplay(messageId) {
+          const el = document.getElementById(`msg-${messageId}`);
+          if (el) {
+            el.textContent = "[Message deleted]";
+            el.style.opacity = "0.5";
+          }
+        }
+
+        /**
+         * Cleanup on page unload
+         */
+        disconnect() {
+          if (this.ws && this.roomId) {
+            this.ws.send(
+              JSON.stringify({
+                type: "leave",
+                userId: this.userId,
+                roomId: this.roomId,
+                username: this.username,
+              }),
+            );
+          }
+          if (this.ws) {
+            this.ws.close();
+          }
+        }
+      }
+
+      // ===== Initialize =====
+      const userId = "<%= userId %>";
+      const username = "<%= username || 'Guest' %>";
+      const roomName = "<%= room %>";
+      const roomId = "<%= roomId %>"; // Get from server!
+
+      console.log("🎮 Chat initialized:", {
+        userId,
+        username,
+        roomName,
+        roomId,
+      });
+
+      const chatClient = new ChatClient(
+        userId,
+        username,
+        roomName,
+        parseInt(roomId),
+      );
+
+      // Cleanup on page unload
+      window.addEventListener("beforeunload", () => {
+        chatClient.disconnect();
+      });
+
+      // Make available for debugging
+      window.chatClient = chatClient;
     </script>
-</body>
+  </body>
 </html>
