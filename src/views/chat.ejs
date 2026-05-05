@@ -11,7 +11,6 @@
       <div class="chat-header">
         <h2># <%= room %></h2>
         <div style="display: flex; gap: 1rem; align-items: center">
-      
           <!-- Three dots menu -->
           <div style="position: relative">
             <button
@@ -194,13 +193,10 @@
               break;
 
             case "user_joined":
-              this.showSystemMessage(
-                `${data.username} joined`,
-              );
+              this.showSystemMessage(`${data.username} joined`);
+              break;
             case "user_left":
-              this.showSystemMessage(
-                `${data.username} left`,
-              );
+              this.showSystemMessage(`${data.username} left`);
             case "message_edited":
               this.editMessageDisplay(data.messageId, data.content);
               break;
@@ -239,7 +235,7 @@
             content,
           };
 
-          console.log("📤 Sending message:", message);
+          console.log(" message:", message);
           this.ws.send(JSON.stringify(message));
 
           this.displayMessage({
@@ -398,13 +394,12 @@
         }, 300);
       });
 
-      // Cleanup on page unload
-      window.addEventListener("beforeunload", () => {
-        chatClient.disconnectTemporarily();
-      });
+      let isUnloading = false;
 
-      // Make available globally for debugging
-      window.chatClient = chatClient;
+      window.addEventListener("beforeunload", () => {
+        isUnloading = true;
+        chatClient.ws.close(); 
+          });
     </script>
   </body>
 </html>

@@ -27,10 +27,11 @@ export class WebSocketService {
     console.log(`User ${userId} left room ${roomId}`);
   }
 
-  broadcastToRoom(roomId: number, message: any) {
+  broadcastToRoom(roomId: number, message: any, excludeWs?: any) {
     const connections = this.roomConnections.get(roomId);
     if (!connections) return;
-    connections.forEach((ws) => {
+    connections.forEach((ws) => { 
+      if (excludeWs && ws === excludeWs) return
       try {
         ws.send(JSON.stringify(message));
       } catch (error) {
@@ -38,7 +39,7 @@ export class WebSocketService {
       }
     });
 
-    console.log(`Broadcast to room ${roomId}: ${connections.size} users`);
+    console.log(`Broadcast to room ${roomId}`);
   }
 
   isConnected(ws: any): boolean {
