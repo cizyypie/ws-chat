@@ -97,17 +97,12 @@ const app = new Elysia()
   })
 
   .ws("/ws", {
-    // When client connects
     open: (ws) => {
       console.log("🔗 WebSocket connection opened");
     },
-
-    // When client sends message
     message: async (ws, message: any) => {
       try {
-        // Parse the incoming message
         const data = message;
-
         console.log(data);
 
         switch (data.type) {
@@ -116,48 +111,53 @@ const app = new Elysia()
             const roomId = parseInt(data.roomId);
             const username = data.username;
 
-            await roomMembersService.joinRoom(userId, roomId);
+            try {
+              await roomMembersService.joinRoom(userId, roomId);
+              console.log(`Saved ${username} to room ${roomId}`);
+            } catch (error) {
+              console.log(`User already member`);
+            }
+
             wsService.joinRoom(userId, roomId, ws);
 
-            const recentMessages = await chatService.getRecentMessagesByRoom(roomId, 20);
-    
+            const recentMessages = await chatService.getRecentMessagesByRoom(
+              roomId,
+              50,
+            );
+            console.log(`Loaded ${recentMessages.length} messages`);
+
             ws.send(
               JSON.stringify({
                 type: "joined",
                 roomId,
-                userCount: wsService.getRoomUserCount(roomId),
-                history: recentMessages
+                history: recentMessages,
               }),
             );
 
-            // Notify others
             wsService.broadcastToRoom(roomId, {
               type: "user_joined",
               username,
-              userCount: wsService.getRoomUserCount(roomId),
             });
 
             break;
           }
 
-          // User sends message
           case "message": {
             const userId = parseInt(data.userId);
             const roomId = parseInt(data.roomId);
             const content = data.content;
             const username = data.username;
 
-            // Save to database
             const savedMessage = await chatService.saveMessage(
               userId,
               roomId,
               content,
             );
             if (!savedMessage) {
-              console.error("Failed to save message to database");
+              console.error("Failed to save message");
               break;
             }
-            // Broadcast to room
+
             wsService.broadcastToRoom(roomId, {
               type: "message",
               id: savedMessage.id,
@@ -170,8 +170,47 @@ const app = new Elysia()
 
             break;
           }
+          case "disconnect": {
+            const userInfo = wsService.getUserInfo(ws);
+            if (userInfo) {
+              console.log(
+                `🔌 User ${userInfo.userId} temporarily disconnecting`,
+              );
 
-          // User edits message (BONUS)
+              wsService.leaveRoom(ws);
+              wsService.broadcastToRoom(userInfo.roomId, {
+                type: "user_left",
+                username: data.username,
+              });
+            }
+            break;
+          }
+
+          // UPDATED: Handle permanent leave
+          case "leave": {
+            const userId = parseInt(data.userId);
+            const roomId = parseInt(data.roomId);
+            const username = data.username;
+
+            // Remove from database
+            await roomMembersService.leaveRoom(userId, roomId);
+            console.log(`User ${userId} left room ${roomId}`);
+
+            // Remove from WebSocket
+            const userInfo = wsService.getUserInfo(ws);
+            if (userInfo) {
+              wsService.leaveRoom(ws);
+            }
+
+            // Notify others
+            wsService.broadcastToRoom(roomId, {
+              type: "user_left",
+              username,
+            });
+
+            break;
+          }
+          
           case "edit_message": {
             const userId = parseInt(data.userId);
             const messageId = parseInt(data.messageId);
@@ -198,7 +237,6 @@ const app = new Elysia()
             break;
           }
 
-          // User deletes message (BONUS)
           case "delete_message": {
             const userId = parseInt(data.userId);
             const messageId = parseInt(data.messageId);
@@ -213,25 +251,6 @@ const app = new Elysia()
                   messageId,
                 });
               }
-            }
-
-            break;
-          }
-
-          // User leaves room
-          case "leave": {
-            const userInfo = wsService.getUserInfo(ws);
-            if (userInfo) {
-              const roomId = userInfo.roomId;
-              const username = data.username;
-
-              wsService.leaveRoom(ws);
-
-              wsService.broadcastToRoom(roomId, {
-                type: "user_left",
-                username,
-                userCount: wsService.getRoomUserCount(roomId),
-              });
             }
 
             break;

@@ -11,10 +11,65 @@
       <div class="chat-header">
         <h2># <%= room %></h2>
         <div style="display: flex; gap: 1rem; align-items: center">
-          <span id="userCount" style="color: #f0f0f0; font-size: 0.9rem"
-            >0 online</span
-          >
-          <a href="/rooms" class="leave-btn">Back to Rooms</a>
+      
+          <!-- Three dots menu -->
+          <div style="position: relative">
+            <button
+              id="menuBtn"
+              style="
+                background: none;
+                border: none;
+                color: white;
+                cursor: pointer;
+                font-size: 1.5rem;
+              "
+            >
+              ⋯
+            </button>
+            <div
+              id="menu"
+              style="
+                display: none;
+                position: absolute;
+                top: 100%;
+                right: 0;
+                background: white;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                min-width: 150px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                z-index: 10;
+              "
+            >
+              <button
+                id="leaveRoomBtn"
+                style="
+                  display: block;
+                  width: 100%;
+                  padding: 10px 15px;
+                  border: none;
+                  background: none;
+                  cursor: pointer;
+                  text-align: left;
+                  color: #dc2626;
+                  font-weight: 500;
+                  border-bottom: 1px solid #eee;
+                "
+              >
+                Leave Room
+              </button>
+              <a
+                href="/rooms"
+                style="
+                  display: block;
+                  padding: 10px 15px;
+                  color: #6b7280;
+                  text-decoration: none;
+                "
+                >Back to Rooms</a
+              >
+            </div>
+          </div>
         </div>
       </div>
 
@@ -35,20 +90,19 @@
     </div>
 
     <script>
-      // ===== Chat Client =====
+      // Chat Client
       class ChatClient {
         constructor(userId, username, roomName, roomId) {
           this.userId = userId;
           this.username = username;
           this.roomName = roomName;
-          this.roomId = roomId; // Passed from server
+          this.roomId = roomId;
           this.ws = null;
 
           // DOM elements
           this.messagesDiv = document.getElementById("messages");
           this.messageForm = document.getElementById("messageForm");
           this.messageInput = document.getElementById("messageInput");
-          this.userCountSpan = document.getElementById("userCount");
 
           console.log("Chat initialized:", {
             userId: this.userId,
@@ -56,7 +110,6 @@
             roomId: this.roomId,
           });
 
-          // Connect to WebSocket
           this.connect();
         }
 
@@ -69,7 +122,6 @@
 
           this.ws = new WebSocket(wsUrl);
 
-          // Connection opened
           this.ws.onopen = () => {
             console.log("WebSocket connected!");
             this.messagesDiv.innerHTML = "";
@@ -77,40 +129,33 @@
             this.joinRoom();
           };
 
-          // Message received
           this.ws.onmessage = (event) => {
             try {
               const data = JSON.parse(event.data);
-              console.log("📥 Received:", data.type);
+              console.log("Received:", data.type);
               this.handleMessage(data);
             } catch (error) {
               console.error("Error parsing message:", error);
             }
           };
 
-          // Connection closed
           this.ws.onclose = () => {
-            console.log(" WebSocket disconnected");
+            console.log("WebSocket disconnected");
             this.showSystemMessage("Disconnected from server.");
             this.messageInput.disabled = true;
           };
 
-          // Error
           this.ws.onerror = (error) => {
             console.error("WebSocket error:", error);
             this.showSystemMessage("Connection error!");
           };
 
-          // Form submission
           this.messageForm.addEventListener("submit", (e) => {
             e.preventDefault();
             this.sendMessage();
           });
         }
 
-        /**
-         * Send join message to server
-         */
         joinRoom() {
           console.log("Sending join message...");
           this.ws.send(
@@ -123,50 +168,39 @@
           );
         }
 
-        /**
-         * Handle incoming WebSocket messages
-         */
         handleMessage(data) {
           switch (data.type) {
             case "joined":
               console.log("Joined room!");
-              this.showSystemMessage(`Connected! ${data.userCount} online`);
-              this.updateUserCount(data.userCount);
 
               if (data.history && Array.isArray(data.history)) {
-                console.log('Loading', data.history.length, 'past messages');
-                data.history.forEach(msg => {
-                    const isOwn = parseInt(msg.userId) === parseInt(this.userId);
-                    this.displayMessage({
-                        id: msg.id,
-                        username: msg.username,
-                        content: msg.content,
-                        createdAt: msg.createdAt,
-                        isOwn: isOwn
-                    });
+                console.log("Loading", data.history.length, "past messages");
+                data.history.forEach((msg) => {
+                  const isOwn = parseInt(msg.userId) === parseInt(this.userId);
+                  this.displayMessage({
+                    id: msg.id,
+                    username: msg.username,
+                    content: msg.content,
+                    createdAt: msg.createdAt,
+                    isOwn: isOwn,
+                  });
                 });
-            }
+              }
               break;
 
             case "message":
-              console.log("New message from", data.username);
+              console.log("💬 New message from", data.username);
               this.displayMessage(data);
               break;
 
             case "user_joined":
               this.showSystemMessage(
-                `${data.username} joined (${data.userCount} online)`,
+                `${data.username} joined`,
               );
-              this.updateUserCount(data.userCount);
-              break;
-
             case "user_left":
               this.showSystemMessage(
-                `${data.username} left (${data.userCount} online)`,
+                `${data.username} left`,
               );
-              this.updateUserCount(data.userCount);
-              break;
-
             case "message_edited":
               this.editMessageDisplay(data.messageId, data.content);
               break;
@@ -185,36 +219,18 @@
           }
         }
 
-        /**
-         * Send message to server
-         */
         sendMessage() {
           const content = this.messageInput.value.trim();
 
-          console.log("Attempting to send:", {
-            content,
-            roomId: this.roomId,
-            wsReady: this.ws && this.ws.readyState === WebSocket.OPEN,
-          });
-
-          if (!content) {
-            console.warn("Empty message");
+          if (
+            !content ||
+            !this.roomId ||
+            !this.ws ||
+            this.ws.readyState !== WebSocket.OPEN
+          ) {
             return;
           }
 
-          if (!this.roomId) {
-            console.error("Room ID not set!");
-            this.showSystemMessage("Error: Room ID not set");
-            return;
-          }
-
-          if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-            console.error("WebSocket not ready");
-            this.showSystemMessage("Error: Not connected");
-            return;
-          }
-
-          // Send message to server
           const message = {
             type: "message",
             userId: this.userId,
@@ -223,10 +239,9 @@
             content,
           };
 
-          console.log("Sending message:", message);
+          console.log("📤 Sending message:", message);
           this.ws.send(JSON.stringify(message));
 
-          // Display locally immediately (optimistic update)
           this.displayMessage({
             username: this.username,
             content,
@@ -238,9 +253,6 @@
           this.messageInput.focus();
         }
 
-        /**
-         * Display a single message
-         */
         displayMessage(data) {
           const msgDiv = document.createElement("div");
           msgDiv.className = `message ${data.isOwn ? "self" : "other"}`;
@@ -261,9 +273,6 @@
           this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;
         }
 
-        /**
-         * Show system message
-         */
         showSystemMessage(text) {
           const msgDiv = document.createElement("div");
           msgDiv.className = "message system";
@@ -272,16 +281,6 @@
           this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;
         }
 
-        /**
-         * Update user count
-         */
-        updateUserCount(count) {
-          this.userCountSpan.textContent = `${count} online`;
-        }
-
-        /**
-         * Edit message display
-         */
         editMessageDisplay(messageId, newContent) {
           const el = document.getElementById(`msg-${messageId}`);
           if (el) {
@@ -289,9 +288,6 @@
           }
         }
 
-        /**
-         * Delete message display
-         */
         deleteMessageDisplay(messageId) {
           const el = document.getElementById(`msg-${messageId}`);
           if (el) {
@@ -300,11 +296,27 @@
           }
         }
 
-        /**
-         * Cleanup on page unload
-         */
-        disconnect() {
-          if (this.ws && this.roomId) {
+        disconnectTemporarily() {
+          console.log("Temporarily disconnecting...");
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            // Send disconnect message (NOT leave!)
+            this.ws.send(
+              JSON.stringify({
+                type: "disconnect",
+                userId: this.userId,
+                roomId: this.roomId,
+                username: this.username,
+              }),
+            );
+            this.ws.close();
+          }
+        }
+
+        async leaveRoomPermanently() {
+          console.log("Leaving room...");
+
+          // Step 1: Notify server via WebSocket
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(
               JSON.stringify({
                 type: "leave",
@@ -313,18 +325,26 @@
                 username: this.username,
               }),
             );
-          }
-          if (this.ws) {
             this.ws.close();
+          }
+
+          // Step 2: Remove from database
+          try {
+            const response = await fetch(`/rooms/${this.roomId}/leave`, {
+              method: "POST",
+            });
+            console.log("Removed from database:", response.ok);
+          } catch (error) {
+            console.error("Error removing from database:", error);
           }
         }
       }
 
-      // ===== Initialize =====
+      // Initialize
       const userId = "<%= userId %>";
       const username = "<%= username || 'Guest' %>";
       const roomName = "<%= room %>";
-      const roomId = "<%= roomId %>"; // Get from server!
+      const roomId = "<%= roomId %>";
 
       console.log("🎮 Chat initialized:", {
         userId,
@@ -340,12 +360,50 @@
         parseInt(roomId),
       );
 
-      // Cleanup on page unload
-      window.addEventListener("beforeunload", () => {
-        chatClient.disconnect();
+      // Menu Toggle
+      const menuBtn = document.getElementById("menuBtn");
+      const menu = document.getElementById("menu");
+      const leaveRoomBtn = document.getElementById("leaveRoomBtn");
+
+      menuBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        menu.style.display = menu.style.display === "none" ? "block" : "none";
       });
 
-      // Make available for debugging
+      // Close menu when clicking elsewhere
+      document.addEventListener("click", () => {
+        menu.style.display = "none";
+      });
+
+      // Leave Room Button
+      leaveRoomBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        if (confirm("Are you sure you want to leave this room?")) {
+          await chatClient.leaveRoomPermanently();
+          // Redirect after a short delay
+          setTimeout(() => {
+            window.location.href = "/rooms";
+          }, 500);
+        }
+      });
+
+      // Back to Rooms (via menu)
+      const backToRoomsLink = document.querySelector('a[href="/rooms"]');
+      backToRoomsLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        chatClient.disconnectTemporarily();
+        // Then navigate
+        setTimeout(() => {
+          window.location.href = "/rooms";
+        }, 300);
+      });
+
+      // Cleanup on page unload
+      window.addEventListener("beforeunload", () => {
+        chatClient.disconnectTemporarily();
+      });
+
+      // Make available globally for debugging
       window.chatClient = chatClient;
     </script>
   </body>

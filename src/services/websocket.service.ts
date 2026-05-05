@@ -38,12 +38,7 @@ export class WebSocketService {
       }
     });
 
-    console.log(`📤 Broadcast to room ${roomId}: ${connections.size} users`);
-  }
-
-  getRoomUserCount(roomId: number): number {
-    const connections = this.roomConnections.get(roomId);
-    return connections ? connections.size : 0;
+    console.log(`Broadcast to room ${roomId}: ${connections.size} users`);
   }
 
   isConnected(ws: any): boolean {

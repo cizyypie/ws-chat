@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { room_members, users, rooms } from '../db/schema';
+import { room_members, users } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export class RoomMembersService {

@@ -29,11 +29,10 @@ export function setupRoomRoutes(app: Elysia) {
             };
         }
     );
-    
-    // POST /rooms - Create new room
+
    // POST /rooms - Create new room
     app.post('/rooms',
-        async ({ body, cookie, set }: any) => { // <-- ADD 'set' to the destructured parameters
+        async ({ body, cookie, set }: any) => { 
             const userId = requireAuth(cookie.userId?.value as string | undefined);
             
             const room = await roomService.createRoom(userId, body.name as string);
