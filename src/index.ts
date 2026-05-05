@@ -111,11 +111,15 @@ const app = new Elysia()
             const roomId = parseInt(data.roomId);
             const username = data.username;
 
-            try {
-              await roomMembersService.joinRoom(userId, roomId);
-              console.log(`Saved ${username} to room ${roomId}`);
-            } catch (error) {
-              console.log(`User already member`);
+            const isAlreadyMember = await roomMembersService.isUserInRoom(userId, roomId);
+            
+            if (!isAlreadyMember) {
+              try {
+                await roomMembersService.joinRoom(userId, roomId);
+                console.log(`Saved ${username} to room ${roomId}`);
+              } catch (error) {
+                console.log(`Failed to join room`);
+              }
             }
 
             wsService.joinRoom(userId, roomId, ws);
@@ -134,10 +138,12 @@ const app = new Elysia()
               }),
             );
 
-            wsService.broadcastToRoom(roomId, {
-              type: "user_joined",
-              username,
-            });
+            if (!isAlreadyMember) {
+              wsService.broadcastToRoom(roomId, {
+                type: "user_joined",
+                username,
+              });
+            }
 
             break;
           }
