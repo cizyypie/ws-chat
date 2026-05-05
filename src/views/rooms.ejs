@@ -32,22 +32,24 @@
                 </div>
             </div>
 
-            <!-- Available Rooms -->
+            <!-- Available Rooms Section -->
             <div>
                 <h2>Available Rooms</h2>
                 <div class="room-list">
                     <% if (locals.availableRooms && availableRooms.length > 0) { %>
                         <% availableRooms.forEach(function(room) { %>
-                            <a href="/chat?room=<%= room.name %>" class="room-card">
+                            <div class="room-card">
                                 <span class="room-name"># <%= room.name %></span>
-                                <span class="badge-join">Join</span>
-                            </a>
+                                <form action="/rooms/<%= room.id %>/join" method="POST" style="margin: 0;">
+                                    <button type="submit" class="badge-join" style="border: none; cursor: pointer;">
+                                        Join & Enter
+                                    </button>
+                                </form>
+                            </div>
                         <% }); %>
-                    <% } else { %>
-                        <div class="empty-state">No public rooms available right now.</div>
                     <% } %>
                 </div>
-            </div>
+            </div>src/routes/room.routes.ts src/routes/auth.routes.ts src/views/rooms.ejs src/db/index.ts
         </div>
 
         <!-- Create Room - SIMPLE FORM (NO JAVASCRIPT!) -->

@@ -25,6 +25,16 @@ export class RoomService {
     .execute();
   }
 
+  async getRoomById(roomId: number) {
+    const result = await db
+      .select()
+      .from(rooms)
+      .where(eq(rooms.id, roomId))
+      .execute();
+
+    return result[0] || null;
+  }
+
 async getRoomsByUser(userId: number){
     return await db.select({
         id:rooms.id,

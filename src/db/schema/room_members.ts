@@ -7,5 +7,5 @@ export const room_members = pgTable('room_members', {
     id: serial('id').primaryKey(),
     userId: integer('user_id').references(() => users.id).notNull(),
     roomId: integer ('room_id').references(() => rooms.id).notNull(),
-    joinedAt: timestamp('joined_at').defaultNow()
+    createdAt: timestamp('created_at').defaultNow()
 });

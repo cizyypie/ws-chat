@@ -166,7 +166,7 @@ const app = new Elysia()
               content,
               createdAt: new Date().toISOString(),
               isOwn: false,
-            });
+            }, ws);
 
             break;
           }

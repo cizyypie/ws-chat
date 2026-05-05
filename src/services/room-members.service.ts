@@ -13,7 +13,8 @@ export class RoomMembersService {
 
             return { success: true, data: result[0] };
         } catch (error) {
-            return { success: false, message: 'Already a member' };
+            console.error("Join Room Error:", error);
+            return { success: false, message: 'Failed' };
         }
     }
 
@@ -34,7 +35,7 @@ export class RoomMembersService {
         return await db.select({
             id: users.id,
             username: users.username,
-            joinedAt: room_members.joinedAt
+            createdAt: room_members.createdAt
         })
         .from(room_members)
         .innerJoin(users, eq(room_members.userId, users.id))

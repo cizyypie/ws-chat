@@ -73,13 +73,25 @@ export function setupRoomRoutes(app: Elysia) {
     
     // POST /rooms/:roomId/join
     app.post('/rooms/:roomId/join',
-        async ({ params, cookie }: any) => {
+        async ({ params, cookie, set }: any) => {
             const userId = requireAuth(cookie.userId?.value as string | undefined);
             const roomId = parseInt(params.roomId as string);
             
-            const result = await roomMembersService.joinRoom(userId, roomId);
+            // 1. Join the room in the DB
+            await roomMembersService.joinRoom(userId, roomId);
             
-            return result;
+            // 2. Look up the room name so we know where to redirect
+            const room = await roomService.getRoomById(roomId); 
+            
+            if (!room) {
+                set.status = 404;
+                return { error: 'Room not found' };
+            }
+
+            // 3. Redirect to the chat route using the room name
+            set.status = 303;
+            set.headers['Location'] = `/chat?room=${room.name}`;
+            return null;
         }
     );
     
