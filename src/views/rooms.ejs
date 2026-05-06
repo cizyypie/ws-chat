@@ -5,97 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Room Dashboard - Chat API</title>
     <link rel="stylesheet" href="/css/style.css">
-    <style>
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.4);
-            z-index: 100;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal-box {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 380px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-        }
-
-        .modal-box h3 {
-            margin-top: 0;
-            margin-bottom: 1rem;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-
-        .modal-actions button[type="submit"] {
-            background: #3b82f6;
-        }
-
-        .btn-cancel {
-            background: #e5e7eb;
-            color: #374151;
-            border: none;
-            padding: 0.75rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            flex: 1;
-        }
-
-        .btn-cancel:hover {
-            background: #d1d5db;
-        }
-
-        .owner-actions {
-            display: flex;
-            gap: 0.4rem;
-            align-items: center;
-        }
-
-        .btn-icon {
-            background: none;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            cursor: pointer;
-            padding: 0.3rem 0.5rem;
-            font-size: 0.9rem;
-            line-height: 1;
-            width: auto;
-            margin: 0;
-            transition: 0.15s;
-        }
-
-        .btn-edit {
-            color: #3b82f6;
-        }
-
-        .btn-edit:hover {
-            background: #eff6ff;
-            border-color: #3b82f6;
-        }
-
-        .btn-delete {
-            color: #ef4444;
-        }
-
-        .btn-delete:hover {
-            background: #fef2f2;
-            border-color: #ef4444;
-        }
-    </style>
+    <link rel="stylesheet" href="/css/room.css">
 </head>
 <body class="dashboard-layout">
     <div class="container">
@@ -109,24 +19,25 @@
                 <h2>Your Rooms</h2>
                 <% if (locals.userRooms && userRooms.length > 0) { %>
                     <% userRooms.forEach(function(room) { %>
-                        <div class="room-card" style="display: flex; justify-content: space-between; align-items: center;">
-                            <a href="/chat?room=<%= room.name %>" style="text-decoration: none; color: inherit; flex: 1;">
+                        <div class="room-card">
+                            <a href="/chat?room=<%= room.name %>" class="room-link">
                                 <span class="room-name"><%= room.name %></span>
                             </a>
-
                             <% if (parseInt(room.ownerId) === parseInt(userId)) { %>
                                 <div class="owner-actions">
-                                    <button class="btn-icon btn-edit" 
-                                            data-id="<%= room.id %>" 
-                                            data-name="<%= room.name %>" 
+                                    <button class="btn-icon btn-edit"
+                                            data-id="<%= room.id %>"
+                                            data-name="<%= room.name %>"
                                             onclick="openEditModal(this)">✏️</button>
-                                    <form action="/rooms/<%= room.id %>/delete" method="POST" style="margin:0;">
+                                    <form action="/rooms/<%= room.id %>/delete" method="POST" class="delete-form">
                                         <button type="submit" class="btn-icon btn-delete">🗑️</button>
                                     </form>
                                 </div>
                             <% } %>
                         </div>
                     <% }); %>
+                <% } else { %>
+                    <div class="empty-state">You haven't joined any rooms yet.</div>
                 <% } %>
             </div>
 
@@ -135,24 +46,29 @@
                 <% if (locals.availableRooms && availableRooms.length > 0) { %>
                     <% availableRooms.forEach(function(room) { %>
                         <div class="room-card">
-                            <form action="/rooms/<%= room.id %>/join" method="POST" style="margin: 0; width: 100%;">
-                                <button type="submit" style="background: none; border: none; padding: 0; font: inherit; cursor: pointer; text-align: left; width: 100%; color: inherit;">
+                            <form action="/rooms/<%= room.id %>/join" method="POST" class="join-form">
+                                <button type="submit" class="join-btn">
                                     <span class="room-name"><%= room.name %></span>
                                 </button>
                             </form>
                         </div>
                     <% }); %>
+                <% } else { %>
+                    <div class="empty-state">No other rooms available.</div>
                 <% } %>
             </div>
         </div>
 
         <div class="create-room-section">
-            <h2 style="margin-top: 0;">Create a New Room</h2>
+            <h2 class="section-title">Create a New Room</h2>
             <form action="/rooms" method="POST">
                 <div class="form-group">
                     <label for="roomName">Room Name</label>
                     <div class="input-group">
-                        <input type="text" id="roomName" name="name" placeholder="e.g., project-alpha" required pattern="[a-zA-Z0-9-]+" title="Only letters, numbers, and hyphens">
+                        <input type="text" id="roomName" name="name"
+                               placeholder="e.g., project-alpha" required
+                               pattern="[a-zA-Z0-9-]+"
+                               title="Only letters, numbers, and hyphens">
                         <button type="submit">Create</button>
                     </div>
                 </div>
@@ -167,13 +83,13 @@
                 <div class="form-group">
                     <label for="editRoomName">New Name</label>
                     <input type="text" id="editRoomName" name="name"
-                        required pattern="[a-zA-Z0-9-]+"
-                        title="Only letters, numbers, and hyphens"
-                        maxlength="50">
+                           required pattern="[a-zA-Z0-9-]+"
+                           title="Only letters, numbers, and hyphens"
+                           maxlength="50">
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
-                    <button type="submit" style="flex:1;">Save</button>
+                    <button type="submit" class="btn-save">Save</button>
                 </div>
             </form>
         </div>
@@ -183,7 +99,6 @@
         function openEditModal(btn) {
             const roomId = btn.dataset.id;
             const name = btn.dataset.name;
-
             document.getElementById('editRoomForm').action = `/rooms/${roomId}/rename`;
             document.getElementById('editRoomName').value = name;
             document.getElementById('editModal').classList.add('active');

@@ -268,17 +268,6 @@ button:hover {
     gap: 0.75rem;
 }
 
-.room-card {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    color: inherit;
-    transition: all 0.2s;
-}
 
 .room-card:hover {
     border-color: #3b82f6;
