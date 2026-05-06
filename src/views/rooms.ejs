@@ -164,10 +164,12 @@
         <div class="modal-box">
             <h3>Edit Room Name</h3>
             <form id="editRoomForm" method="POST">
-                <input type="hidden" name="_method" value="PATCH">
                 <div class="form-group">
                     <label for="editRoomName">New Name</label>
-                    <input type="text" id="editRoomName" name="name" required pattern="[a-zA-Z0-9-]+" title="Only letters, numbers, and hyphens" maxlength="50">
+                    <input type="text" id="editRoomName" name="name"
+                        required pattern="[a-zA-Z0-9-]+"
+                        title="Only letters, numbers, and hyphens"
+                        maxlength="50">
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
@@ -182,9 +184,10 @@
             const roomId = btn.dataset.id;
             const name = btn.dataset.name;
 
-            document.getElementById('editRoomForm').action = `/rooms/${roomId}`;
+            document.getElementById('editRoomForm').action = `/rooms/${roomId}/rename`;
             document.getElementById('editRoomName').value = name;
             document.getElementById('editModal').classList.add('active');
+            document.getElementById('editRoomName').focus();
         }
 
         function closeEditModal() {

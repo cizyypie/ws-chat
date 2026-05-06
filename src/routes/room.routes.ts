@@ -17,7 +17,7 @@ export function setupRoomRoutes(app: Elysia) {
     const userRooms = await roomService.getRoomsByUser(userId);
     const userRoomIds = new Set(userRooms.map((r) => r.id));
     const availableRooms = allRooms.filter((r) => !userRoomIds.has(r.id));
-    return { username: "User", userId: userId, userRooms, availableRooms };
+    return { username: "User", userId:userId, userRooms, availableRooms };
   });
 
   app.post(
@@ -33,8 +33,8 @@ export function setupRoomRoutes(app: Elysia) {
     { body: t.Object({ name: t.String({ minLength: 1, maxLength: 50 }) }) }
   );
 
-  app.patch(
-    "/rooms/:roomId",
+  app.post(
+    "/rooms/:roomId/rename",
     async ({ params, body, cookie, set }: any) => {
       const userId = requireAuth(cookie.userId?.value);
       const roomId = parseInt(params.roomId);
