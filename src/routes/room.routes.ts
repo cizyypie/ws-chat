@@ -6,103 +6,94 @@ const roomService = new RoomService();
 const roomMembersService = new RoomMembersService();
 
 const requireAuth = (cookieValue: string | undefined): number => {
-  if (!cookieValue) {
-    throw new Error("Not authenticated");
-  }
+  if (!cookieValue) throw new Error("Not authenticated");
   return parseInt(cookieValue);
 };
 
 export function setupRoomRoutes(app: Elysia) {
-  // GET /rooms - List all rooms
-  app.get('/rooms', async ({ cookie }: any) => {
+  app.get("/rooms", async ({ cookie }: any) => {
     const userId = requireAuth(cookie.userId?.value);
     const allRooms = await roomService.getAllRooms();
     const userRooms = await roomService.getRoomsByUser(userId);
-    const userRoomIds = new Set(userRooms.map(r => r.id));
-    const availableRooms = allRooms.filter(r => !userRoomIds.has(r.id));
+    const userRoomIds = new Set(userRooms.map((r) => r.id));
+    const availableRooms = allRooms.filter((r) => !userRoomIds.has(r.id));
+    return { username: "User", userId: userId, userRooms, availableRooms };
+  });
 
-    return {
-        username: "User", 
-        userRooms,
-        availableRooms
-    };
-});
-
-  // POST /rooms - Create new room
   app.post(
     "/rooms",
     async ({ body, cookie, set }: any) => {
-      const userId = requireAuth(cookie.userId?.value as string | undefined);
-      const room = await roomService.createRoom(userId, body.name as string);
-
-      // Auto join the creator
+      const userId = requireAuth(cookie.userId?.value);
+      const room = await roomService.createRoom(userId, body.name);
       await roomMembersService.joinRoom(userId, room!.id);
-
-      // Tell the browser to immediately redirect back to the rooms list
       set.status = 303;
       set.headers["Location"] = "/rooms";
       return null;
     },
-    {
-      body: t.Object({
-        name: t.String({ minLength: 1, maxLength: 50 }),
-      }),
-    },
+    { body: t.Object({ name: t.String({ minLength: 1, maxLength: 50 }) }) }
   );
 
-  // DELETE /rooms/:roomId
+  app.patch(
+    "/rooms/:roomId",
+    async ({ params, body, cookie, set }: any) => {
+      const userId = requireAuth(cookie.userId?.value);
+      const roomId = parseInt(params.roomId);
+
+      const result = await roomService.updateRoomName(roomId, userId, body.name);
+
+      if (!result.success) {
+        set.status = result.reason === "not_owner" ? 403 : 404;
+        return { success: false, message: result.reason };
+      }
+
+      set.status = 303;
+      set.headers["Location"] = "/rooms";
+      return null;
+    },
+    { body: t.Object({ name: t.String({ minLength: 1, maxLength: 50 }) }) }
+  );
+
   app.delete("/rooms/:roomId", async ({ params, cookie }: any) => {
-    const userId = requireAuth(cookie.userId?.value as string | undefined);
-    const roomId = parseInt(params.roomId as string);
-
+    const userId = requireAuth(cookie.userId?.value);
+    const roomId = parseInt(params.roomId);
     const success = await roomService.deleteRoom(roomId, userId);
-
-    if (!success) {
-      return {
-        success: false,
-        message: "Cannot delete (not owner)",
-      };
-    }
-
+    if (!success) return { success: false, message: "Cannot delete (not owner)" };
     return { success: true };
   });
 
-  // POST /rooms/:roomId/join
- app.post('/rooms/:roomId/join',
+  app.post("/rooms/:roomId/delete", async ({ params, cookie, set }: any) => {
+    const userId = requireAuth(cookie.userId?.value);
+    const roomId = parseInt(params.roomId);
+    const success = await roomService.deleteRoom(roomId, userId);
+
+    set.status = 303;
+    set.headers["Location"] = "/rooms";
+    return null;
+  });
+
+  app.post(
+    "/rooms/:roomId/join",
     async ({ params, cookie, set }: any) => {
-        const userId = requireAuth(cookie.userId?.value);
-        const roomId = parseInt(params.roomId);
-
-        // 1. Check if the user is ALREADY a member
-        const alreadyIn = await roomMembersService.isUserInRoom(userId, roomId);
-        
-        if (!alreadyIn) {
-            // 2. Only join if they aren't already there
-            await roomMembersService.joinRoom(userId, roomId);
-        }
-
-        const room = await roomService.getRoomById(roomId);
-        
-        set.status = 303;
-        set.headers['Location'] = `/chat?room=${room!.name}`;
-        return null;
+      const userId = requireAuth(cookie.userId?.value);
+      const roomId = parseInt(params.roomId);
+      const alreadyIn = await roomMembersService.isUserInRoom(userId, roomId);
+      if (!alreadyIn) await roomMembersService.joinRoom(userId, roomId);
+      const room = await roomService.getRoomById(roomId);
+      set.status = 303;
+      set.headers["Location"] = `/chat?room=${room!.name}`;
+      return null;
     }
-);
+  );
 
-  // POST /rooms/:roomId/leave
   app.post("/rooms/:roomId/leave", async ({ params, cookie }: any) => {
-    const userId = requireAuth(cookie.userId?.value as string | undefined);
-    const roomId = parseInt(params.roomId as string);
-
+    const userId = requireAuth(cookie.userId?.value);
+    const roomId = parseInt(params.roomId);
     const success = await roomMembersService.leaveRoom(userId, roomId);
-
     return { success };
   });
 
-  // GET /rooms/:roomId/members
   app.get("/rooms/:roomId/members", async ({ params }: any) => {
-    const roomId = parseInt(params.roomId as string);
-
+    const roomId = parseInt(params.roomId);
     return await roomMembersService.getRoomMembers(roomId);
   });
 
