@@ -111,7 +111,7 @@
                     <% userRooms.forEach(function(room) { %>
                         <div class="room-card" style="display: flex; justify-content: space-between; align-items: center;">
                             <a href="/chat?room=<%= room.name %>" style="text-decoration: none; color: inherit; flex: 1;">
-                                <span class="room-name"># <%= room.name %></span>
+                                <span class="room-name"><%= room.name %></span>
                             </a>
 
                             <% if (parseInt(room.ownerId) === parseInt(userId)) { %>
@@ -137,7 +137,7 @@
                         <div class="room-card">
                             <form action="/rooms/<%= room.id %>/join" method="POST" style="margin: 0; width: 100%;">
                                 <button type="submit" style="background: none; border: none; padding: 0; font: inherit; cursor: pointer; text-align: left; width: 100%; color: inherit;">
-                                    <span class="room-name"># <%= room.name %></span>
+                                    <span class="room-name"><%= room.name %></span>
                                 </button>
                             </form>
                         </div>

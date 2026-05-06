@@ -9,7 +9,13 @@
   <body class="centered-layout">
     <div class="chat-container">
       <div class="chat-header">
-        <h2># <%= room %></h2>
+        </button>
+          <a href="/rooms" class="back-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m15 18-6-6 6-6"/>
+              </svg>
+          </a>
+        <h2> <%= room %></h2>
         <div style="display: flex; gap: 1rem; align-items: center">
           <!-- Three dots menu -->
           <div style="position: relative">
@@ -56,17 +62,6 @@
                 "
               >
                 Leave Room
-              </button>
-              <a
-                href="/rooms"
-                style="
-                  display: block;
-                  padding: 10px 15px;
-                  color: #6b7280;
-                  text-decoration: none;
-                "
-                >Back to Rooms</a
-              >
             </div>
           </div>
         </div>
@@ -122,7 +117,7 @@
           this.ws.onopen = () => {
             console.log("WebSocket connected!");
             this.messagesDiv.innerHTML = "";
-            this.showSystemMessage("Connected! Joining room...");
+            this.showSystemMessage();
             this.joinRoom();
           };
 
@@ -138,7 +133,7 @@
 
           this.ws.onclose = () => {
             console.log("🔌 WebSocket disconnected");
-            this.showSystemMessage("Disconnected from server.");
+            this.showSystemMessage();
             this.messageInput.disabled = true;
           };
 
@@ -244,7 +239,6 @@
                 data.userId === this.userId,
               );
 
-              // DO NOT DISPLAY if this is your own message
               if (parseInt(data.userId) === parseInt(this.userId)) {
                 console.log("Ignoring own message from broadcast");
                 break;
@@ -329,7 +323,7 @@
         }
 
         disconnectTemporarily() {
-          console.log("🔄 Temporarily disconnecting...");
+          // console.log("Temporarily disconnecting...");
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(
               JSON.stringify({
