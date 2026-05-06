@@ -6,11 +6,12 @@ import { html } from "@elysiajs/html";
 import { cookie } from "@elysiajs/cookie";
 import ejs from "ejs";
 import { apiRoutes } from "./routes/index";
-import { AuthService, ChatService, RoomService,RoomMembersService, ViewService, WebSocketService,} from "./services/index.service";
+import { ChatService, RoomService,RoomMembersService, ViewService, WebSocketService,} from "./services/index.service";
+import path from "path";
+
 
 const viewService = new ViewService(),
   wsService = new WebSocketService(),
-  authService = new AuthService(),
   chatService = new ChatService(),
   roomMembersService = new RoomMembersService(),
   roomService = new RoomService();
@@ -26,6 +27,10 @@ const app = new Elysia()
   .use(staticPlugin({ assets: "public", prefix: "/" }))
   .use(html())
   .use(cookie())
+  .use(staticPlugin({ 
+  assets: path.join(import.meta.dir, "../public"),  // absolute path from src/
+  prefix: "/"
+}))
   .use(
     swagger({
       documentation: {
