@@ -6,13 +6,18 @@ import { html } from "@elysiajs/html";
 import { cookie } from "@elysiajs/cookie";
 import ejs from "ejs";
 import { apiRoutes } from "./routes/index";
-import { ChatService, RoomService,RoomMembersService, ViewService, WebSocketService,} from "./services/index.service";
+import {
+  MessageService,
+  RoomService,
+  RoomMembersService,
+  ViewService,
+  WebSocketService,
+} from "./services/index.service";
 import path from "path";
-
 
 const viewService = new ViewService(),
   wsService = new WebSocketService(),
-  chatService = new ChatService(),
+  messageService = new MessageService(),
   roomMembersService = new RoomMembersService(),
   roomService = new RoomService();
 
@@ -27,15 +32,17 @@ const app = new Elysia()
   .use(staticPlugin({ assets: "public", prefix: "/" }))
   .use(html())
   .use(cookie())
-  .use(staticPlugin({ 
-  assets: path.join(import.meta.dir, "../public"),  // absolute path from src/
-  prefix: "/"
-}))
+  .use(
+    staticPlugin({
+      assets: path.join(import.meta.dir, "../public"), // absolute path from src/
+      prefix: "/",
+    }),
+  )
   .use(
     swagger({
       documentation: {
         info: {
-          title: "Real-time Chat API",
+          title: "Real-time Message API",
           version: "1.0.0",
         },
       },
@@ -73,7 +80,7 @@ const app = new Elysia()
     });
   })
 
-  .get("/chat", async ({ query, cookie, set }: any) => {
+  .get("/message", async ({ query, cookie, set }: any) => {
     if (!cookie.userId?.value) {
       set.status = 303;
       set.headers["Location"] = "/login";
@@ -93,7 +100,7 @@ const app = new Elysia()
       });
     }
 
-    return await renderView("chat", {
+    return await renderView("message", {
       userId: cookie.userId.value,
       username: cookie.username?.value || "Guest",
       room: roomName,
@@ -134,7 +141,7 @@ const app = new Elysia()
 
             wsService.joinRoom(userId, roomId, ws);
 
-            const recentMessages = await chatService.getRecentMessagesByRoom(
+            const recentMessages = await messageService.getRecentMessagesByRoom(
               roomId,
               50,
             );
@@ -167,7 +174,7 @@ const app = new Elysia()
             const content = data.content;
             const username = data.username;
             const tempId = data.tempId;
-            const savedMessage = await chatService.saveMessage(
+            const savedMessage = await messageService.saveMessage(
               userId,
               roomId,
               content,
@@ -250,7 +257,7 @@ const app = new Elysia()
             const messageId = parseInt(data.messageId);
             const newContent = data.content;
 
-            const edited = await chatService.editMessage(
+            const edited = await messageService.editMessage(
               messageId,
               userId,
               newContent,
@@ -275,7 +282,10 @@ const app = new Elysia()
             const userId = parseInt(data.userId);
             const messageId = parseInt(data.messageId);
 
-            const deleted = await chatService.deleteMessage(messageId, userId);
+            const deleted = await messageService.deleteMessage(
+              messageId,
+              userId,
+            );
 
             if (deleted) {
               const userInfo = wsService.getUserInfo(ws);

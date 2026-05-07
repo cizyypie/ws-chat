@@ -1,7 +1,7 @@
 import { Elysia, t } from "elysia";
-import { ChatService } from "../services/chat.service";
+import { MessageService } from "../services/message.service";
 
-const chatService = new ChatService();
+const messageService = new MessageService();
 
 const requireAuth = (cookieValue: string | undefined): number => {
   if (!cookieValue) {
@@ -10,13 +10,13 @@ const requireAuth = (cookieValue: string | undefined): number => {
   return parseInt(cookieValue);
 };
 
-export function setupChatRoutes(app: Elysia) {
+export function setupMessageRoutes(app: Elysia) {
   // GET /rooms/:roomId/messages
   app.get("/rooms/:roomId/messages", async ({ params, query }: any) => {
     const roomId = parseInt(params.roomId as string);
     const limit = parseInt((query.limit as string) || "50");
 
-    return await chatService.getRecentMessagesByRoom(roomId, limit);
+    return await messageService.getRecentMessagesByRoom(roomId, limit);
   });
 
   // POST /rooms/:roomId/messages
@@ -27,7 +27,7 @@ export function setupChatRoutes(app: Elysia) {
       const userId = requireAuth(cookie.userId?.value as string | undefined);
       const roomId = parseInt(params.roomId as string);
 
-      const message = await chatService.saveMessage(
+      const message = await messageService.saveMessage(
         userId,
         roomId,
         body.content,
@@ -49,7 +49,7 @@ export function setupChatRoutes(app: Elysia) {
       const userId = requireAuth(cookie.userId?.value as string | undefined);
       const messageId = parseInt(params.messageId as string);
 
-      const message = await chatService.editMessage(
+      const message = await messageService.editMessage(
         messageId,
         userId,
         body.content,
@@ -76,7 +76,7 @@ export function setupChatRoutes(app: Elysia) {
     const userId = requireAuth(cookie.userId?.value as string | undefined);
     const messageId = parseInt(params.messageId as string);
 
-    const success = await chatService.deleteMessage(messageId, userId);
+    const success = await messageService.deleteMessage(messageId, userId);
 
     if (!success) {
       return {

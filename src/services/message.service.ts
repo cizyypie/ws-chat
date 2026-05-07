@@ -2,7 +2,7 @@ import { db } from "../db";
 import { messages, users } from "../db/schema";
 import { eq, and } from "drizzle-orm";
 
-export class ChatService {
+export class MessageService {
   async getRecentMessages(limit: number = 50) {
     return await db
       .select({

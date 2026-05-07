@@ -1,4 +1,4 @@
-class ChatClient {
+class MessageClient {
   constructor(userId, username, roomName, roomId) {
     this.userId = userId;
     this.username = username;
@@ -10,7 +10,7 @@ class ChatClient {
     this.messageForm = document.getElementById("messageForm");
     this.messageInput = document.getElementById("messageInput");
 
-    console.log("Chat Client initialized:", { userId, username, roomId });
+    console.log("Message Client initialized:", { userId, username, roomId });
     this.connect();
   }
 
@@ -57,17 +57,25 @@ class ChatClient {
 
   joinRoom() {
     console.log("Sending join message...");
-    this.ws.send(JSON.stringify({
-      type: "join",
-      userId: this.userId,
-      roomId: this.roomId,
-      username: this.username,
-    }));
+    this.ws.send(
+      JSON.stringify({
+        type: "join",
+        userId: this.userId,
+        roomId: this.roomId,
+        username: this.username,
+      }),
+    );
   }
 
   sendMessage() {
     const content = this.messageInput.value.trim();
-    if (!content || !this.roomId || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    if (
+      !content ||
+      !this.roomId ||
+      !this.ws ||
+      this.ws.readyState !== WebSocket.OPEN
+    )
+      return;
 
     const tempId = `temp-${Date.now()}`;
     console.log("Sending message with tempId:", tempId);
@@ -80,14 +88,16 @@ class ChatClient {
       isOwn: true,
     });
 
-    this.ws.send(JSON.stringify({
-      type: "message",
-      userId: this.userId,
-      roomId: this.roomId,
-      username: this.username,
-      content,
-      tempId,
-    }));
+    this.ws.send(
+      JSON.stringify({
+        type: "message",
+        userId: this.userId,
+        roomId: this.roomId,
+        username: this.username,
+        content,
+        tempId,
+      }),
+    );
 
     this.messageInput.value = "";
     this.messageInput.focus();
@@ -191,12 +201,14 @@ class ChatClient {
 
   disconnectTemporarily() {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        type: "disconnect",
-        userId: this.userId,
-        roomId: this.roomId,
-        username: this.username,
-      }));
+      this.ws.send(
+        JSON.stringify({
+          type: "disconnect",
+          userId: this.userId,
+          roomId: this.roomId,
+          username: this.username,
+        }),
+      );
       this.ws.close();
     }
   }
@@ -204,16 +216,20 @@ class ChatClient {
   async leaveRoomPermanently() {
     console.log("Leaving room...");
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        type: "leave",
-        userId: this.userId,
-        roomId: this.roomId,
-        username: this.username,
-      }));
+      this.ws.send(
+        JSON.stringify({
+          type: "leave",
+          userId: this.userId,
+          roomId: this.roomId,
+          username: this.username,
+        }),
+      );
       this.ws.close();
     }
     try {
-      const response = await fetch(`/rooms/${this.roomId}/leave`, { method: "POST" });
+      const response = await fetch(`/rooms/${this.roomId}/leave`, {
+        method: "POST",
+      });
       console.log("Removed from database:", response.ok);
     } catch (error) {
       console.error("Error removing from database:", error);
@@ -222,13 +238,13 @@ class ChatClient {
 }
 // --- Init: read server data from DOM ---
 document.addEventListener("DOMContentLoaded", () => {
-  const chatData = document.getElementById("chat-data").dataset;
+  const messageData = document.getElementById("message-data").dataset;
 
-  const chatClient = new ChatClient(
-    chatData.userId,
-    chatData.username,
-    chatData.roomName,
-    parseInt(chatData.roomId)
+  const messageClient = new MessageClient(
+    messageData.userId,
+    messageData.username,
+    messageData.roomName,
+    parseInt(messageData.roomId),
   );
 
   // Menu toggle
@@ -248,19 +264,23 @@ document.addEventListener("DOMContentLoaded", () => {
   leaveRoomBtn.addEventListener("click", async (e) => {
     e.preventDefault();
     if (confirm("Are you sure you want to leave this room?")) {
-      await chatClient.leaveRoomPermanently();
-      setTimeout(() => { window.location.href = "/rooms"; }, 500);
+      await messageClient.leaveRoomPermanently();
+      setTimeout(() => {
+        window.location.href = "/rooms";
+      }, 500);
     }
   });
 
   const backToRoomsLink = document.querySelector('a[href="/rooms"]');
   backToRoomsLink.addEventListener("click", (e) => {
     e.preventDefault();
-    chatClient.disconnectTemporarily();
-    setTimeout(() => { window.location.href = "/rooms"; }, 300);
+    messageClient.disconnectTemporarily();
+    setTimeout(() => {
+      window.location.href = "/rooms";
+    }, 300);
   });
 
   window.addEventListener("beforeunload", () => {
-    if (chatClient.ws) chatClient.ws.close();
+    if (messageClient.ws) messageClient.ws.close();
   });
 });

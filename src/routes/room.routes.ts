@@ -17,7 +17,7 @@ export function setupRoomRoutes(app: Elysia) {
     const userRooms = await roomService.getRoomsByUser(userId);
     const userRoomIds = new Set(userRooms.map((r) => r.id));
     const availableRooms = allRooms.filter((r) => !userRoomIds.has(r.id));
-    return { username: "User", userId:userId, userRooms, availableRooms };
+    return { username: "User", userId: userId, userRooms, availableRooms };
   });
 
   app.post(
@@ -30,7 +30,7 @@ export function setupRoomRoutes(app: Elysia) {
       set.headers["Location"] = "/rooms";
       return null;
     },
-    { body: t.Object({ name: t.String({ minLength: 1, maxLength: 50 }) }) }
+    { body: t.Object({ name: t.String({ minLength: 1, maxLength: 50 }) }) },
   );
 
   app.post(
@@ -39,7 +39,11 @@ export function setupRoomRoutes(app: Elysia) {
       const userId = requireAuth(cookie.userId?.value);
       const roomId = parseInt(params.roomId);
 
-      const result = await roomService.updateRoomName(roomId, userId, body.name);
+      const result = await roomService.updateRoomName(
+        roomId,
+        userId,
+        body.name,
+      );
 
       if (!result.success) {
         set.status = result.reason === "not_owner" ? 403 : 404;
@@ -50,14 +54,15 @@ export function setupRoomRoutes(app: Elysia) {
       set.headers["Location"] = "/rooms";
       return null;
     },
-    { body: t.Object({ name: t.String({ minLength: 1, maxLength: 50 }) }) }
+    { body: t.Object({ name: t.String({ minLength: 1, maxLength: 50 }) }) },
   );
 
   app.delete("/rooms/:roomId", async ({ params, cookie }: any) => {
     const userId = requireAuth(cookie.userId?.value);
     const roomId = parseInt(params.roomId);
     const success = await roomService.deleteRoom(roomId, userId);
-    if (!success) return { success: false, message: "Cannot delete (not owner)" };
+    if (!success)
+      return { success: false, message: "Cannot delete (not owner)" };
     return { success: true };
   });
 
@@ -71,19 +76,16 @@ export function setupRoomRoutes(app: Elysia) {
     return null;
   });
 
-  app.post(
-    "/rooms/:roomId/join",
-    async ({ params, cookie, set }: any) => {
-      const userId = requireAuth(cookie.userId?.value);
-      const roomId = parseInt(params.roomId);
-      const alreadyIn = await roomMembersService.isUserInRoom(userId, roomId);
-      if (!alreadyIn) await roomMembersService.joinRoom(userId, roomId);
-      const room = await roomService.getRoomById(roomId);
-      set.status = 303;
-      set.headers["Location"] = `/chat?room=${room!.name}`;
-      return null;
-    }
-  );
+  app.post("/rooms/:roomId/join", async ({ params, cookie, set }: any) => {
+    const userId = requireAuth(cookie.userId?.value);
+    const roomId = parseInt(params.roomId);
+    const alreadyIn = await roomMembersService.isUserInRoom(userId, roomId);
+    if (!alreadyIn) await roomMembersService.joinRoom(userId, roomId);
+    const room = await roomService.getRoomById(roomId);
+    set.status = 303;
+    set.headers["Location"] = `/message?room=${room!.name}`;
+    return null;
+  });
 
   app.post("/rooms/:roomId/leave", async ({ params, cookie }: any) => {
     const userId = requireAuth(cookie.userId?.value);

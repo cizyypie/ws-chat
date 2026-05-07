@@ -3,16 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Room: <%= room %> - Chat API</title>
+    <title>Room: <%= room %> - Message API</title>
     <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/message.css" />
   </head>
   <body class="centered-layout">
-    <div class="chat-container">
-      <div class="chat-header">
+    <div class="message-container">
+      <div class="message-header">
         <a href="/rooms" class="back-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-            fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m15 18-6-6 6-6"/>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="m15 18-6-6 6-6" />
           </svg>
         </a>
         <h2><%= room %></h2>
@@ -20,7 +30,10 @@
           <div class="menu-wrapper">
             <button id="menuBtn" class="menu-btn">⋯</button>
             <div id="menu" class="dropdown-menu">
-              <button id="leaveRoomBtn" class="dropdown-item dropdown-item--danger">
+              <button
+                id="leaveRoomBtn"
+                class="dropdown-item dropdown-item--danger"
+              >
                 Leave Room
               </button>
             </div>
@@ -28,11 +41,11 @@
         </div>
       </div>
 
-      <div class="chat-messages" id="messages">
+      <div class="message-messages" id="messages">
         <div class="message system">Connecting to room...</div>
       </div>
 
-      <form class="chat-input" id="messageForm">
+      <form class="message-input" id="messageForm">
         <input
           type="text"
           id="messageInput"
@@ -45,14 +58,15 @@
     </div>
 
     <!-- Pass EJS vars to JS via data attributes -->
-    <div id="chat-data"
+    <div
+      id="message-data"
       data-user-id="<%= userId %>"
       data-username="<%= username || 'Guest' %>"
       data-room-name="<%= room %>"
       data-room-id="<%= roomId %>"
-      hidden>
-    </div>
+      hidden
+    ></div>
 
-    <script src="/js/chat-client.js"></script>
+    <script src="/js/message-client.js"></script>
   </body>
 </html>

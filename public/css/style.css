@@ -1,4 +1,4 @@
-/* BASE STYLES (Applies to all pages) */ 
+/* BASE STYLES (Applies to all pages) */
 body {
     font-family: system-ui, -apple-system, sans-serif;
     background-color: #f3f4f6;
@@ -15,7 +15,7 @@ a {
     text-decoration: none;
 }
 
-   /* LAYOUT CLASSES (Apply these to <body>) */
+/* LAYOUT CLASSES (Apply these to <body>) */
 .centered-layout {
     display: flex;
     justify-content: center;
@@ -28,7 +28,7 @@ a {
     padding: 2rem;
 }
 
-   /* AUTH PAGES (Login & Signup) */
+/* AUTH PAGES (Login & Signup) */
 .login-container,
 .signup-container {
     background: white;
@@ -103,8 +103,8 @@ button:hover {
     border: 1px solid #f87171;
 }
 
-   /* CHAT ROOM */
-.chat-container {
+/* CHAT ROOM */
+.message-container {
     background: white;
     width: 100%;
     max-width: 600px;
@@ -116,8 +116,8 @@ button:hover {
     overflow: hidden;
 }
 
-.chat-header {
-    background: #111827;
+.message-header {
+    background: #000000;
     color: white;
     padding: 1rem 1.5rem;
     display: flex;
@@ -125,7 +125,7 @@ button:hover {
     align-items: center;
 }
 
-.chat-header h2 {
+.message-header h2 {
     margin: 0;
     font-size: 1.2rem;
     color: white;
@@ -141,7 +141,7 @@ button:hover {
     color: #fca5a5;
 }
 
-.chat-messages {
+.message-messages {
     flex: 1;
     padding: 1.5rem;
     overflow-y: auto;
@@ -188,7 +188,7 @@ button:hover {
     font-style: italic;
 }
 
-.chat-input {
+.message-input {
     padding: 1rem;
     background: white;
     border-top: 1px solid #e5e7eb;
@@ -196,7 +196,7 @@ button:hover {
     gap: 0.5rem;
 }
 
-.chat-input input {
+.message-input input {
     flex: 1;
     padding: 0.75rem;
     border: 1px solid #d1d5db;
@@ -204,18 +204,18 @@ button:hover {
     font-size: 1rem;
 }
 
-.chat-input button {
+.message-input button {
     width: auto;
     padding: 0.75rem 1.5rem;
     background: #3b82f6;
     margin-top: 0;
 }
 
-.chat-input button:hover {
+.message-input button:hover {
     background: #2563eb;
 }
 
-   /* DASHBOARD */
+/* DASHBOARD */
 .container {
     max-width: 800px;
     margin: 0 auto;
