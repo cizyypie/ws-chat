@@ -7,8 +7,7 @@ body {
 
 h1,
 h2 {
-    color: #1f2937;
-    margin-top: 0;
+    color: #fefefe;
 }
 
 a {
@@ -117,9 +116,7 @@ button:hover {
 }
 
 .message-header {
-    background: #000000;
-    color: white;
-    padding: 1rem 1.5rem;
+    color: rgb(111, 110, 110);
     display: flex;
     justify-content: space-between;
     align-items: center;
