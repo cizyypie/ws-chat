@@ -77,12 +77,17 @@ export class MessageService {
 
     if (!message.length) return null;
     if (message[0]!.userId !== userId) return null; // Not owner!
+    
+    const ageInSeconds =
+      (Date.now() - new Date(message[0]!.createdAt as Date).getTime()) / 1000;
+
+    if (ageInSeconds > 300) return null; // Can't edit after 5 min
 
     const result = await db
       .update(messages)
       .set({
         content: newContent,
-        editedAt: new Date(), // Mark when edited
+        editedAt: new Date(),
       })
       .where(eq(messages.id, messageId))
       .returning()
@@ -90,6 +95,8 @@ export class MessageService {
 
     return result[0];
   }
+
+
   async deleteMessage(messageId: number, userId: number) {
     const message = await db
       .select()

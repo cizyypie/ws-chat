@@ -22,16 +22,16 @@ class MessageClient {
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      console.log("WebSocket connected!");
+      console.log("✅ WebSocket connected!");
       this.messagesDiv.innerHTML = "";
-      this.showSystemMessage();
+      this.showSystemMessage("Connected to room");
       this.joinRoom();
     };
 
     this.ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log("Received:", data.type, data);
+        console.log("📨 Received:", data.type, data);
         this.handleMessage(data);
       } catch (error) {
         console.error("Error parsing message:", error);
@@ -40,12 +40,12 @@ class MessageClient {
 
     this.ws.onclose = () => {
       console.log("🔌 WebSocket disconnected");
-      this.showSystemMessage();
+      this.showSystemMessage("Disconnected");
       this.messageInput.disabled = true;
     };
 
     this.ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
+      console.error("❌ WebSocket error:", error);
       this.showSystemMessage("Connection error!");
     };
 
@@ -63,19 +63,15 @@ class MessageClient {
         userId: this.userId,
         roomId: this.roomId,
         username: this.username,
-      }),
+      })
     );
   }
 
   sendMessage() {
     const content = this.messageInput.value.trim();
-    if (
-      !content ||
-      !this.roomId ||
-      !this.ws ||
-      this.ws.readyState !== WebSocket.OPEN
-    )
+    if (!content || !this.roomId || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
       return;
+    }
 
     const tempId = `temp-${Date.now()}`;
     console.log("Sending message with tempId:", tempId);
@@ -96,11 +92,38 @@ class MessageClient {
         username: this.username,
         content,
         tempId,
-      }),
+      })
     );
 
     this.messageInput.value = "";
     this.messageInput.focus();
+  }
+
+  sendEditMessage(messageId, newContent) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+    console.log("✏️ Sending edit:", messageId, newContent);
+    this.ws.send(
+      JSON.stringify({
+        type: "edit_message",
+        userId: this.userId,
+        messageId: messageId,
+        content: newContent,
+      })
+    );
+  }
+
+  sendDeleteMessage(messageId) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+    console.log("🗑️ Sending delete:", messageId);
+    this.ws.send(
+      JSON.stringify({
+        type: "delete_message",
+        userId: this.userId,
+        messageId: messageId,
+      })
+    );
   }
 
   handleMessage(data) {
@@ -108,7 +131,7 @@ class MessageClient {
       case "joined":
         console.log("Joined room!");
         if (data.history && Array.isArray(data.history)) {
-          console.log("Loading", data.history.length, "past messages");
+          console.log(`Loading ${data.history.length} past messages`);
           data.history.forEach((msg) => {
             this.displayMessage({
               id: msg.id,
@@ -122,6 +145,7 @@ class MessageClient {
         break;
 
       case "message_confirmed":
+        console.log("Message confirmed:", data.id);
         const tempEl = document.getElementById(`msg-${data.tempId}`);
         if (tempEl) tempEl.id = `msg-${data.id}`;
         break;
@@ -146,10 +170,12 @@ class MessageClient {
         break;
 
       case "message_edited":
+        console.log("Message edited:", data.messageId);
         this.editMessageDisplay(data.messageId, data.content);
         break;
 
       case "message_deleted":
+        console.log("Message deleted:", data.messageId);
         this.deleteMessageDisplay(data.messageId);
         break;
 
@@ -163,40 +189,151 @@ class MessageClient {
     }
   }
 
-  displayMessage({ id, username, content, createdAt, isOwn }) {
-    const msgDiv = document.createElement("div");
-    msgDiv.className = `message ${isOwn ? "self" : "other"}`;
-    if (id) msgDiv.id = `msg-${id}`;
+ displayMessage({ id, username, content, createdAt, isOwn }) {
+  const msgDiv = document.createElement("div");
+  msgDiv.className = `message ${isOwn ? "self" : "other"}`;
+  msgDiv.id = `msg-${id}`;
 
-    const time = new Date(createdAt).toLocaleTimeString();
+  // Username/header
+  const nameEl = document.createElement("strong");
+  nameEl.textContent = username;
+  msgDiv.appendChild(nameEl);
 
-    msgDiv.innerHTML = isOwn
-      ? `<div>${content}</div><small class="msg-time">${time}</small>`
-      : `<div class="message-header">${username} ${time}</div><div>${content}</div>`;
+  // Content
+  const contentEl = document.createElement("p");
+  contentEl.className = "message-content";
+  contentEl.textContent = content;
+  msgDiv.appendChild(contentEl);
 
-    this.messagesDiv.appendChild(msgDiv);
-    this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;
+  // Time
+  const timeEl = document.createElement("small");
+  timeEl.className = "message-time";
+  timeEl.textContent = new Date(createdAt).toLocaleTimeString();
+  msgDiv.appendChild(timeEl);
+
+  // Menu button (only for own messages)
+  if (isOwn) {
+    const menuBtn = document.createElement("button");
+    menuBtn.className = "message-menu-btn";
+    menuBtn.textContent = "⋯";
+    
+    // Create dropdown menu
+    const menu = document.createElement("div");
+    menu.className = "message-dropdown";
+    
+    // Edit option
+    const editBtn = document.createElement("button");
+    editBtn.className = "dropdown-option";
+    editBtn.textContent = "Edit";
+    editBtn.addEventListener("click", () => {
+      const newContent = prompt("Edit message:", content);
+      if (newContent && newContent.trim()) {
+        this.sendEditMessage(id, newContent.trim());
+        menu.style.display = "none";
+      }
+    });
+    
+    // Delete option
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "dropdown-option dropdown-option--danger";
+    deleteBtn.textContent =  "Delete";
+    deleteBtn.addEventListener("click", () => {
+      if (confirm("Delete this message?")) {
+        this.sendDeleteMessage(id);
+        menu.style.display = "none";
+      }
+    });
+    
+    menu.appendChild(editBtn);
+    menu.appendChild(deleteBtn);
+    
+    // Toggle menu on button click
+    menuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      menu.style.display = menu.style.display === "none" ? "block" : "none";
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener("click", () => {
+      menu.style.display = "none";
+    });
+    
+    msgDiv.appendChild(menuBtn);
+    msgDiv.appendChild(menu);
   }
 
-  showSystemMessage(text) {
-    const msgDiv = document.createElement("div");
-    msgDiv.className = "message system";
-    msgDiv.textContent = text;
-    this.messagesDiv.appendChild(msgDiv);
-    this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;
+  this.messagesDiv.appendChild(msgDiv);
+  this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;
+}
+
+  createMessageMenu(messageId, content) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "message-menu-wrapper";
+
+    // Edit button
+    const editBtn = document.createElement("button");
+    editBtn.className = "message-action-btn";
+    editBtn.textContent = "Edit";
+    editBtn.addEventListener("click", () => {
+      const newContent = prompt("Edit your message:", content);
+      if (newContent !== null && newContent.trim()) {
+        this.sendEditMessage(messageId, newContent.trim());
+      }
+    });
+
+    // Delete button
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "message-action-btn";
+    deleteBtn.textContent = "Delete";
+    deleteBtn.addEventListener("click", () => {
+      if (confirm("Delete this message?")) {
+        this.sendDeleteMessage(messageId);
+      }
+    });
+
+    wrapper.appendChild(editBtn);
+    wrapper.appendChild(deleteBtn);
+    return wrapper;
   }
 
   editMessageDisplay(messageId, newContent) {
     const el = document.getElementById(`msg-${messageId}`);
-    if (el) el.textContent = newContent + " (edited)";
+    if (el) {
+      const contentArea = el.querySelector(".message-content");
+      if (contentArea) {
+        contentArea.textContent = newContent;
+        
+        if (!el.querySelector(".edited-tag")) {
+          const editedTag = document.createElement("span");
+          editedTag.className = "edited-tag";
+          editedTag.textContent = " (edited)";
+          contentArea.appendChild(editedTag);
+        }
+      }
+    }
   }
 
   deleteMessageDisplay(messageId) {
     const el = document.getElementById(`msg-${messageId}`);
     if (el) {
-      el.textContent = "[Message deleted]";
-      el.style.opacity = "0.5";
+      const contentArea = el.querySelector(".message-content");
+      if (contentArea) {
+        contentArea.textContent = "[Message deleted]";
+        contentArea.style.fontStyle = "italic";
+        el.style.opacity = "0.5";
+        
+        const menu = el.querySelector(".message-menu-wrapper");
+        if (menu) menu.remove();
+      }
     }
+  }
+
+  showSystemMessage(text) {
+    const msgDiv = document.createElement("div");
+    msgDiv.className = "message system";
+    msgDiv.textContent = text || "System message";
+    this.messagesDiv.appendChild(msgDiv);
+    this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;
   }
 
   disconnectTemporarily() {
@@ -207,7 +344,7 @@ class MessageClient {
           userId: this.userId,
           roomId: this.roomId,
           username: this.username,
-        }),
+        })
       );
       this.ws.close();
     }
@@ -222,7 +359,7 @@ class MessageClient {
           userId: this.userId,
           roomId: this.roomId,
           username: this.username,
-        }),
+        })
       );
       this.ws.close();
     }
@@ -230,13 +367,14 @@ class MessageClient {
       const response = await fetch(`/rooms/${this.roomId}/leave`, {
         method: "POST",
       });
-      console.log("Removed from database:", response.ok);
+      console.log("Left room:", response.ok);
     } catch (error) {
-      console.error("Error removing from database:", error);
+      console.error("Error leaving room:", error);
     }
   }
 }
-// --- Init: read server data from DOM ---
+
+// PAGE INIT
 document.addEventListener("DOMContentLoaded", () => {
   const messageData = document.getElementById("message-data").dataset;
 
@@ -244,10 +382,10 @@ document.addEventListener("DOMContentLoaded", () => {
     messageData.userId,
     messageData.username,
     messageData.roomName,
-    parseInt(messageData.roomId),
+    parseInt(messageData.roomId)
   );
 
-  // Menu toggle
+  // Room menu
   const menuBtn = document.getElementById("menuBtn");
   const menu = document.getElementById("menu");
   const leaveRoomBtn = document.getElementById("leaveRoomBtn");
@@ -271,15 +409,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Back button
   const backToRoomsLink = document.querySelector('a[href="/rooms"]');
-  backToRoomsLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    messageClient.disconnectTemporarily();
-    setTimeout(() => {
-      window.location.href = "/rooms";
-    }, 300);
-  });
+  if (backToRoomsLink) {
+    backToRoomsLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      messageClient.disconnectTemporarily();
+      setTimeout(() => {
+        window.location.href = "/rooms";
+      }, 300);
+    });
+  }
 
+  // Cleanup
   window.addEventListener("beforeunload", () => {
     if (messageClient.ws) messageClient.ws.close();
   });
