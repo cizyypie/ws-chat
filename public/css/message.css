@@ -18,9 +18,6 @@
   color: white;
 }
 
-.menu-wrapper {
-  position: relative;
-}
 
 .menu-btn {
   background: none;
@@ -70,16 +67,34 @@
   background: #fafafa;
 }
 
+/* Message container */
 .message {
   max-width: 75%;
   padding: 0.75rem 1rem;
   border-radius: 8px;
   font-size: 0.95rem;
-  line-height: 1.4;
+  line-height: 1;
   position: relative;
   word-wrap: break-word;
 }
+.message-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap:0;
+}
 
+.message-wrapper.self {
+  align-items: flex-end; 
+}
+
+.message-wrapper.other {
+  align-items: flex-start;
+}
+
+.message-wrapper.system {
+  align-items: center;
+}
 .message.self {
   align-self: flex-end;
   background: #3b82f6;
@@ -102,30 +117,29 @@
   font-style: italic;
 }
 
-.message strong {
-  display: block;
+/* Header row: username + menu */
+.message-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.message-username {
   font-size: 0.85rem;
-  margin-bottom: 0.25rem;
+  font-weight: 600;
+  display: block;
 }
 
-.message-content {
-  margin: 0.25rem 0;
-  word-break: break-word;
-}
-
-.message-time {
-  font-size: 0.75rem;
-  opacity: 0.7;
-}
-
-/* ========== MESSAGE MENU (⋯ button) ========== */
+/* Menu button */
 .message-menu-btn {
   background: none;
   border: none;
   color: inherit;
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1rem;
   padding: 0;
+  margin: 0;
   margin-left: 0.5rem;
   opacity: 0;
   transition: opacity 0.2s;
@@ -133,6 +147,8 @@
 
 .message:hover .message-menu-btn {
   opacity: 1;
+   background: none
+
 }
 
 /* Dropdown menu */
@@ -160,6 +176,7 @@
   font-size: 0.9rem;
   border-bottom: 1px solid #eee;
   transition: background 0.2s;
+  color: #1f2937;
 }
 
 .dropdown-option:last-child {
@@ -178,9 +195,32 @@
   background: #fee2e2;
 }
 
+/* Content and time row */
+.message-content-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.message-content {
+  margin: 0;
+  word-break: break-word;
+  flex: 1;
+}
+
+.message-time {
+  margin: 0;
+  padding: 0;
+  line-height: 1; /* Keeps the text box tight to the letters */
+}
+
 .edited-tag {
   font-size: 0.7rem;
   opacity: 0.7;
   margin-left: 0.3rem;
   font-style: italic;
+}
+.edit-btn {
+  color: #000000 !important;
 }

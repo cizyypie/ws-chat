@@ -168,12 +168,13 @@ const app = new Elysia()
 
             break;
           }
+          
           case "message": {
             const userId = parseInt(data.userId);
             const roomId = parseInt(data.roomId);
             const content = data.content;
             const username = data.username;
-            const tempId = data.tempId;
+
             const savedMessage = await messageService.saveMessage(
               userId,
               roomId,
@@ -187,18 +188,7 @@ const app = new Elysia()
 
             console.log(`Message saved: ${savedMessage.id}`);
 
-            // Step 1: Send confirmation BACK to the sender (the one who sent it)
-            ws.send(
-              JSON.stringify({
-                type: "message_confirmed",
-                tempId: tempId,
-                id: savedMessage.id,
-                content: savedMessage.content,
-                createdAt: savedMessage.createdAt,
-              }),
-            );
-
-            // Step 2: Broadcast to EVERYONE ELSE (exclude the sender)
+            // Broadcast to EVERYONE (including sender)
             wsService.broadcastToRoom(
               roomId,
               {
@@ -209,7 +199,7 @@ const app = new Elysia()
                 content: savedMessage.content,
                 createdAt: savedMessage.createdAt,
               },
-              ws,
+              null,
             );
 
             break;

@@ -64,7 +64,39 @@
       data-room-id="<%= roomId %>"
       hidden
     ></div>
+    <!-- 1. The Container where messages will appear -->
+    <div id="messages-container"></div>
 
+    <!-- 2. The Blueprint (The Browser ignores this until JS asks for it) -->
+    <template id="message-template">
+        <div class="message-wrapper">
+        <div class="message">
+          <div class="message-header-row">
+           
+            <strong class="message-username"></strong>
+            <div class="menu-wrapper">
+              <button class="message-menu-btn">...</button>
+              <div class="message-dropdown" style="display: none">
+                <button class="dropdown-option edit-btn">Edit</button>
+                <button
+                  class="dropdown-option dropdown-option--danger delete-btn"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="message-content-row">
+            <p class="message-content"></p>
+              <small class="message-time"></small>
+          </div>
+        </div>
+          <small class="message-time"></small>
+      </div>
+      
+      </div>
+      
+    </template>
     <script src="/js/message-client.js"></script>
   </body>
 </html>

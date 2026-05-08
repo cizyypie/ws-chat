@@ -22,7 +22,7 @@ class MessageClient {
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      console.log("✅ WebSocket connected!");
+      console.log("WebSocket connected!");
       this.messagesDiv.innerHTML = "";
       this.showSystemMessage("Connected to room");
       this.joinRoom();
@@ -63,66 +63,54 @@ class MessageClient {
         userId: this.userId,
         roomId: this.roomId,
         username: this.username,
-      })
+      }),
     );
   }
 
-  sendMessage() {
-    const content = this.messageInput.value.trim();
-    if (!content || !this.roomId || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return;
-    }
+ sendMessage() {
+  const content = this.messageInput.value.trim();
+  if (!content || !this.roomId || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
+    return;
+  }
 
-    const tempId = `temp-${Date.now()}`;
-    console.log("Sending message with tempId:", tempId);
+  this.messageInput.value = "";
+  this.messageInput.focus();
 
-    this.displayMessage({
-      id: tempId,
+  this.ws.send(
+    JSON.stringify({
+      type: "message",
+      userId: this.userId,
+      roomId: this.roomId,
       username: this.username,
       content,
-      createdAt: new Date().toISOString(),
-      isOwn: true,
-    });
-
-    this.ws.send(
-      JSON.stringify({
-        type: "message",
-        userId: this.userId,
-        roomId: this.roomId,
-        username: this.username,
-        content,
-        tempId,
-      })
-    );
-
-    this.messageInput.value = "";
-    this.messageInput.focus();
-  }
+    })
+  );
+}
 
   sendEditMessage(messageId, newContent) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
-    console.log("✏️ Sending edit:", messageId, newContent);
+    console.log("Sending edit:", messageId, newContent);
     this.ws.send(
       JSON.stringify({
         type: "edit_message",
         userId: this.userId,
         messageId: messageId,
         content: newContent,
-      })
+      }),
     );
   }
 
   sendDeleteMessage(messageId) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
-    console.log("🗑️ Sending delete:", messageId);
+    console.log("Sending delete:", messageId);
     this.ws.send(
       JSON.stringify({
         type: "delete_message",
         userId: this.userId,
         messageId: messageId,
-      })
+      }),
     );
   }
 
@@ -144,20 +132,13 @@ class MessageClient {
         }
         break;
 
-      case "message_confirmed":
-        console.log("Message confirmed:", data.id);
-        const tempEl = document.getElementById(`msg-${data.tempId}`);
-        if (tempEl) tempEl.id = `msg-${data.id}`;
-        break;
-
       case "message":
-        if (parseInt(data.userId) === parseInt(this.userId)) break;
         this.displayMessage({
           id: data.id,
           username: data.username,
           content: data.content,
           createdAt: data.createdAt,
-          isOwn: false,
+          isOwn: parseInt(data.userId) === parseInt(this.userId),
         });
         break;
 
@@ -189,80 +170,68 @@ class MessageClient {
     }
   }
 
- displayMessage({ id, username, content, createdAt, isOwn }) {
-  const msgDiv = document.createElement("div");
-  msgDiv.className = `message ${isOwn ? "self" : "other"}`;
-  msgDiv.id = `msg-${id}`;
+displayMessage({ id, username, content, createdAt, isOwn, type = 'user' }) {
+  const template = document.getElementById("message-template");
+  const clone = template.content.cloneNode(true);
 
-  // Username/header
-  const nameEl = document.createElement("strong");
-  nameEl.textContent = username;
-  msgDiv.appendChild(nameEl);
+  const msgDiv = clone.querySelector(".message");
+  const nameEl = clone.querySelector(".message-username");
+  const contentEl = clone.querySelector(".message-content");
+  const timeEl = clone.querySelector(".message-time");
+  const menuWrapper = clone.querySelector(".menu-wrapper");
 
-  // Content
-  const contentEl = document.createElement("p");
-  contentEl.className = "message-content";
-  contentEl.textContent = content;
-  msgDiv.appendChild(contentEl);
-
-  // Time
-  const timeEl = document.createElement("small");
-  timeEl.className = "message-time";
-  timeEl.textContent = new Date(createdAt).toLocaleTimeString();
-  msgDiv.appendChild(timeEl);
-
-  // Menu button (only for own messages)
-  if (isOwn) {
-    const menuBtn = document.createElement("button");
-    menuBtn.className = "message-menu-btn";
-    menuBtn.textContent = "⋯";
-    
-    // Create dropdown menu
-    const menu = document.createElement("div");
-    menu.className = "message-dropdown";
-    
-    // Edit option
-    const editBtn = document.createElement("button");
-    editBtn.className = "dropdown-option";
-    editBtn.textContent = "Edit";
-    editBtn.addEventListener("click", () => {
-      const newContent = prompt("Edit message:", content);
-      if (newContent && newContent.trim()) {
-        this.sendEditMessage(id, newContent.trim());
-        menu.style.display = "none";
-      }
-    });
-    
-    // Delete option
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "dropdown-option dropdown-option--danger";
-    deleteBtn.textContent =  "Delete";
-    deleteBtn.addEventListener("click", () => {
-      if (confirm("Delete this message?")) {
-        this.sendDeleteMessage(id);
-        menu.style.display = "none";
-      }
-    });
-    
-    menu.appendChild(editBtn);
-    menu.appendChild(deleteBtn);
-    
-    // Toggle menu on button click
-    menuBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      menu.style.display = menu.style.display === "none" ? "block" : "none";
-    });
-    
-    // Close menu when clicking outside
-    document.addEventListener("click", () => {
-      menu.style.display = "none";
-    });
-    
-    msgDiv.appendChild(menuBtn);
-    msgDiv.appendChild(menu);
+  // 1. Style based on message type (Self, Other, or System)
+  if (type === 'system') {
+    msgDiv.classList.add("system");
+    menuWrapper.remove();
+    nameEl.remove(); // System messages usually don't need a username
+  } else {
+    msgDiv.classList.add(isOwn ? "self" : "other");
+    nameEl.textContent = username;
   }
 
-  this.messagesDiv.appendChild(msgDiv);
+  // 2. Set Content
+  msgDiv.id = `msg-${id}`;
+  contentEl.textContent = content;
+  timeEl.textContent = new Date(createdAt).toLocaleTimeString([], { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+
+  // 3. Handle Menu Logic (Only for 'Own' messages)
+  if (isOwn && type !== 'system') {
+    const menuBtn = clone.querySelector(".message-menu-btn");
+    const menu = clone.querySelector(".message-dropdown");
+    const editBtn = clone.querySelector(".edit-btn");
+    const deleteBtn = clone.querySelector(".delete-btn");
+
+    // Toggle dropdown
+    menuBtn.onclick = (e) => {
+      e.stopPropagation();
+      // Close any other open menus first
+      document.querySelectorAll('.message-dropdown').forEach(m => m.style.display = 'none');
+      menu.style.display = "block";
+    };
+
+    // Edit Action
+    editBtn.onclick = () => {
+      const newContent = prompt("Edit message:", contentEl.textContent);
+      if (newContent?.trim()) this.sendEditMessage(id, newContent.trim());
+    };
+
+    // Delete Action
+    deleteBtn.onclick = () => {
+      if (confirm("Delete this message?")) this.sendDeleteMessage(id);
+    };
+
+    // Global click listener to close menu
+    document.addEventListener("click", () => menu.style.display = "none", { once: true });
+  } else if (menuWrapper) {
+    menuWrapper.remove();
+  }
+
+  // 4. Render and Scroll
+  this.messagesDiv.appendChild(clone);
   this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;
 }
 
@@ -270,24 +239,20 @@ class MessageClient {
     const wrapper = document.createElement("div");
     wrapper.className = "message-menu-wrapper";
 
-    // Edit button
-    const editBtn = document.createElement("button");
-    editBtn.className = "message-action-btn";
-    editBtn.textContent = "Edit";
     editBtn.addEventListener("click", () => {
-      const newContent = prompt("Edit your message:", content);
-      if (newContent !== null && newContent.trim()) {
-        this.sendEditMessage(messageId, newContent.trim());
+      const newContent = prompt("Edit message:", content);
+      if (newContent && newContent.trim()) {
+        const realId = parseInt(msgDiv.id.replace("msg-", ""));
+        this.sendEditMessage(realId, newContent.trim());
+        menu.style.display = "none";
       }
     });
 
-    // Delete button
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "message-action-btn";
-    deleteBtn.textContent = "Delete";
     deleteBtn.addEventListener("click", () => {
       if (confirm("Delete this message?")) {
-        this.sendDeleteMessage(messageId);
+        const realId = parseInt(msgDiv.id.replace("msg-", ""));
+        this.sendDeleteMessage(realId);
+        menu.style.display = "none";
       }
     });
 
@@ -302,7 +267,7 @@ class MessageClient {
       const contentArea = el.querySelector(".message-content");
       if (contentArea) {
         contentArea.textContent = newContent;
-        
+
         if (!el.querySelector(".edited-tag")) {
           const editedTag = document.createElement("span");
           editedTag.className = "edited-tag";
@@ -321,7 +286,7 @@ class MessageClient {
         contentArea.textContent = "[Message deleted]";
         contentArea.style.fontStyle = "italic";
         el.style.opacity = "0.5";
-        
+
         const menu = el.querySelector(".message-menu-wrapper");
         if (menu) menu.remove();
       }
@@ -344,7 +309,7 @@ class MessageClient {
           userId: this.userId,
           roomId: this.roomId,
           username: this.username,
-        })
+        }),
       );
       this.ws.close();
     }
@@ -359,7 +324,7 @@ class MessageClient {
           userId: this.userId,
           roomId: this.roomId,
           username: this.username,
-        })
+        }),
       );
       this.ws.close();
     }
@@ -382,7 +347,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageData.userId,
     messageData.username,
     messageData.roomName,
-    parseInt(messageData.roomId)
+    parseInt(messageData.roomId),
   );
 
   // Room menu
