@@ -5,7 +5,7 @@
 A web app where users can:
 - Sign up and log in
 - Create and join chat rooms
-- Send messages instantly (no refresh needed)
+- Send messages instantly
 - Edit or delete their messages
 - See who joins/leaves
 
